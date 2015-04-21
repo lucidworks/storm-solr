@@ -1,0 +1,53 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:metrics="http://www.ryantenney.com/schema/metrics"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.springframework.org/schema/context
+           http://www.springframework.org/schema/context/spring-context.xsd
+           http://www.ryantenney.com/schema/metrics
+           http://www.ryantenney.com/schema/metrics/metrics-3.0.xsd">
+
+    <context:annotation-config/>
+    <context:property-placeholder location="classpath:storm-solr.properties"/>
+    <context:component-scan base-package="org.lucidworks.storm"/>
+
+    <!-- Metrics support, sends periodic reports to the logger -->
+    <metrics:metric-registry id="metrics" />
+    <metrics:annotation-driven metric-registry="metrics" />
+    <metrics:reporter type="slf4j" metric-registry="metrics" period="1m" />
+
+    <bean id="twitterDataProvider" class="com.lucidworks.storm.example.twitter.TwitterDataProvider">
+      <property name="keywords">
+        <list>
+            <value>solr</value>
+            <value>lucene</value>
+            <value>spark</value>
+            <value>hadoop</value>
+            <value>storm</value>
+        </list>
+      </property>
+    </bean>
+
+    <bean id="cloudSolrClient" class="org.apache.solr.client.solrj.impl.CloudSolrClient">
+        <constructor-arg index="0" value="${zkHost}"/>
+        <property name="defaultCollection" value="${defaultCollection}"/>
+    </bean>
+
+    <!-- You can plug-in a different mapping impl by changing the class of this bean -->
+    <bean id="solrInputDocumentMapper" class="com.lucidworks.storm.solr.DefaultSolrInputDocumentMapper">
+        <property name="idFieldName" value="id"/>
+        <property name="fieldGuessingEnabled" value="${fieldGuessingEnabled}"/>
+    </bean>
+
+    <!--
+    Bolt "action" beans must be created with prototype scope if declared with parallelism > 1
+    to avoid thread-safety issues
+     -->
+    <bean id="solrBoltAction" class="com.lucidworks.storm.solr.SolrBoltAction" scope="prototype">
+        <property name="batchSize" value="100"/>
+        <property name="bufferTimeoutMs" value="1000"/>
+    </bean>
+
+</beans>
