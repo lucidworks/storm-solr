@@ -186,5 +186,3 @@ for the data_driven_schema_configs configset. If using field guessing, then you 
 
 The ${fieldGuessingEnabled} variable will be resolved from the Config.groovy configuration file at runtime.
 
-Alternatively, you can use the JsonDocumentMapper which sends arbitrary JSON documents to the /update/json/docs
-request handler.
