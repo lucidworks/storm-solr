@@ -6,5 +6,5 @@ import backtype.storm.tuple.Tuple;
  * Interface to a POJO that implements some action on streaming data in a Storm topology.
  */
 public interface StreamingDataAction {
-    void execute(Tuple input);
+    SpringBolt.ExecuteResult execute(Tuple input);
 }

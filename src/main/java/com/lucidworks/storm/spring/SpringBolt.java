@@ -1,6 +1,7 @@
 package com.lucidworks.storm.spring;
 
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Map;
 
 import backtype.storm.Config;
@@ -21,6 +22,16 @@ public class SpringBolt extends BaseRichBolt {
 
   private static final Logger log = Logger.getLogger(SpringBolt.class);
 
+  public static final boolean isTickTuple(final Tuple tuple) {
+    return tuple != null &&
+      Constants.SYSTEM_COMPONENT_ID.equals(tuple.getSourceComponent()) &&
+      Constants.SYSTEM_TICK_STREAM_ID.equals(tuple.getSourceStreamId());
+  }
+
+  public static enum ExecuteResult {
+    ACK, BUFFERED, IGNORED
+  }
+
   protected String boltLogicBeanId;
   protected Fields outputFields;
   protected int tickRate = -1;
@@ -30,11 +41,9 @@ public class SpringBolt extends BaseRichBolt {
   private transient OutputCollector collector;
   private transient Map stormConf;
 
-  public static final boolean isTickTuple(final Tuple tuple) {
-    return tuple != null &&
-           Constants.SYSTEM_COMPONENT_ID.equals(tuple.getSourceComponent()) &&
-           Constants.SYSTEM_TICK_STREAM_ID.equals(tuple.getSourceStreamId());
-  }
+  // bolt action impls may employ a small buffer to avoid sending too many requests to an external system
+  // but we don't want to ack tuples until the action verifies the buffer was successfully sent
+  private transient LinkedList<Tuple> bufferedTuples;
 
   public SpringBolt(String boltBeanId) {
     this(boltBeanId, null, -1);
@@ -58,20 +67,46 @@ public class SpringBolt extends BaseRichBolt {
     this.stormConf = map;
     this.collector = outputCollector;
     getStreamingDataActionBean();
+    bufferedTuples = new LinkedList<Tuple>();
   }
 
   public void execute(Tuple input) {
     try {
+      ExecuteResult result = ExecuteResult.IGNORED;
       if (isTickTuple(input)) {
         if (isTickTupleAware)
-          ((TickTupleAware)delegate).onTick();
+          result = ((TickTupleAware) delegate).onTick();
       } else {
-        delegate.execute(input);
+        result = delegate.execute(input);
       }
-      collector.ack(input);
+
+      if (result == ExecuteResult.IGNORED) {
+        // bolt action ignored this tuple, so we just ack and keep processing
+        collector.ack(input);
+        return;
+      }
+
+      bufferedTuples.add(input);
+
+      if (result == ExecuteResult.ACK) {
+        // ack the current tuple and all buffered tuples
+        try {
+          for (Tuple buffered : bufferedTuples)
+            collector.ack(buffered);
+        } finally {
+          bufferedTuples.clear();
+        }
+      }
     } catch (Throwable exc) {
       collector.reportError(exc);
-      collector.fail(input);
+
+      bufferedTuples.add(input);
+      try {
+        for (Tuple buffered : bufferedTuples)
+          collector.fail(buffered);
+      } finally {
+        bufferedTuples.clear();
+      }
     }
   }
 

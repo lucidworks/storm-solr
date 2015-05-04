@@ -1,5 +1,7 @@
 package com.lucidworks.storm.solr;
 
+import static com.lucidworks.storm.spring.SpringBolt.ExecuteResult;
+
 import backtype.storm.tuple.Tuple;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Histogram;
@@ -58,18 +60,20 @@ public class SolrBoltAction implements StreamingDataAction, TickTupleAware {
 
   private long bufferTimeoutAtNanos = -1L;
 
-  public void onTick() {
+  public ExecuteResult onTick() {
     // this catches the case where we have buffered docs, but don't see any more docs flowing in for a while
     if (!batch.isEmpty() && (bufferTimeoutAtNanos < 0 || System.nanoTime() >= bufferTimeoutAtNanos))
-      flushBufferedDocs();
+      return flushBufferedDocs();
+
+    return ExecuteResult.IGNORED;
   }
 
-  public void execute(Tuple input) {
+  public ExecuteResult execute(Tuple input) {
 
     if (collection == null) {
       collection = cloudSolrClient.getDefaultCollection();
       if (collection == null)
-        throw new IllegalStateException("Collection not configured for the Solr bolt!");
+        throw new IllegalStateException("Collection name not configured for the Solr bolt!");
 
       String mapper = (solrInputDocumentMapper != null ? solrInputDocumentMapper.getClass().getSimpleName()
         : DefaultSolrInputDocumentMapper.class.getSimpleName());
@@ -80,7 +84,7 @@ public class SolrBoltAction implements StreamingDataAction, TickTupleAware {
     String docId = input.getString(0);
     Object docObj = input.getValue(1);
     if (docId == null || docObj == null)
-      return; // nothing to index
+      return ExecuteResult.IGNORED; // nothing to index
 
     // default if not auto-wired
     if (solrInputDocumentMapper == null)
@@ -88,15 +92,20 @@ public class SolrBoltAction implements StreamingDataAction, TickTupleAware {
 
     SolrInputDocument doc = solrInputDocumentMapper.toInputDoc(docId, docObj);
     if (doc == null)
-      return; // mapper doesn't want this object indexed
+      return ExecuteResult.IGNORED; // mapper doesn't want this object indexed
 
+    return bufferDoc(doc);
+  }
+
+  protected ExecuteResult bufferDoc(SolrInputDocument doc) {
     if (batch == null)
       batch = new ArrayList<SolrInputDocument>(batchSize);
 
     batch.add(doc);
 
+    ExecuteResult result = ExecuteResult.BUFFERED;
     if (batch.size() >= batchSize) {
-      flushBufferedDocs();
+      result = flushBufferedDocs();
     } else {
       // initial state
       if (bufferTimeoutAtNanos == -1L)
@@ -104,11 +113,13 @@ public class SolrBoltAction implements StreamingDataAction, TickTupleAware {
 
       // see if we've waited too long for more docs
       if (System.nanoTime() >= bufferTimeoutAtNanos)
-        flushBufferedDocs(); // took too long to see a full batch worth of docs, so send what we have ...
+        result = flushBufferedDocs(); // took too long to see a full batch worth of docs, so send what we have ...
     }
+
+    return result;
   }
 
-  protected void flushBufferedDocs() {
+  protected ExecuteResult flushBufferedDocs() {
     int numDocsInBatch = batch.size();
     Timer.Context timer = (sendBatchToSolr != null) ? sendBatchToSolr.time() : null;
     try {
@@ -125,6 +136,8 @@ public class SolrBoltAction implements StreamingDataAction, TickTupleAware {
 
       resetBufferTimeout();
     }
+
+    return ExecuteResult.ACK;
   }
 
   protected void resetBufferTimeout() {

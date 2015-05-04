@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.Date;
 
 import backtype.storm.tuple.Tuple;
+import com.lucidworks.storm.spring.SpringBolt;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
@@ -61,7 +62,8 @@ public class SolrBoltActionTest extends TestSolrCloudClusterSupport {
     when(mockTuple.size()).thenReturn(2);
     when(mockTuple.getString(0)).thenReturn(docId);
     when(mockTuple.getValue(1)).thenReturn(testDoc);
-    sba.execute(mockTuple);
+    SpringBolt.ExecuteResult result = sba.execute(mockTuple);
+    assertTrue(result == SpringBolt.ExecuteResult.ACK);
     cloudSolrServer.commit();
 
     // verify the object to Solr mapping worked correctly using reflection and dynamic fields

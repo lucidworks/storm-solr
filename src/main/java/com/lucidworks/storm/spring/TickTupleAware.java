@@ -5,5 +5,5 @@ package com.lucidworks.storm.spring;
  * notified when tick tuples are sent through the message stream.
  */
 public interface TickTupleAware {
-  void onTick();
+  SpringBolt.ExecuteResult onTick();
 }
