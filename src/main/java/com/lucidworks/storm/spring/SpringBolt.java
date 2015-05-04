@@ -77,7 +77,7 @@ public class SpringBolt extends BaseRichBolt {
         if (isTickTupleAware)
           result = ((TickTupleAware) delegate).onTick();
       } else {
-        result = delegate.execute(input);
+        result = delegate.execute(input, collector);
       }
 
       if (result == ExecuteResult.IGNORED) {
@@ -89,6 +89,7 @@ public class SpringBolt extends BaseRichBolt {
       bufferedTuples.add(input);
 
       if (result == ExecuteResult.ACK) {
+
         // ack the current tuple and all buffered tuples
         try {
           for (Tuple buffered : bufferedTuples)

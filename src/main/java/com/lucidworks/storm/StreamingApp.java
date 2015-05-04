@@ -60,6 +60,8 @@ import org.springframework.core.env.MapPropertySource;
  */
 public class StreamingApp {
 
+  private static final Logger appLog = Logger.getLogger(StreamingApp.class);
+
   private static final Map<String, ApplicationContext> globalSpringContexts = new HashMap<String, ApplicationContext>();
 
   public static enum ENV {
@@ -72,19 +74,40 @@ public class StreamingApp {
   public static final ApplicationContext spring(Map stormConf) {
     String stormId = (String)stormConf.get("storm.id");
     String springXml = (String)stormConf.get("springXml");
-    if (springXml == null) springXml = "spring.xml";
+    if (springXml == null) springXml = "storm-solr-spring.xml";
 
     // one per JVM
     ApplicationContext spring = null;
     synchronized (StreamingApp.class) {
       spring = globalSpringContexts.get(stormId);
       if (spring == null) {
-        ClassPathXmlApplicationContext ctxt = new ClassPathXmlApplicationContext(new String[]{springXml}, false);
+
+        InputStream res = StreamingApp.class.getClassLoader().getResourceAsStream(springXml);
+        if (res != null) {
+          appLog.info("Classpath resource '"+springXml+"' FOUND by classloader: "+StreamingApp.class.getClassLoader());
+        } else {
+          appLog.warn("Classpath resource '"+springXml+"' not found by classloader: "+StreamingApp.class.getClassLoader());
+        }
+
+        ClassPathXmlApplicationContext ctxt = new ClassPathXmlApplicationContext(new String[]{springXml}, false /* don't refresh yet */);
         // inject the Spring closure from the Storm config map into the Spring context for property resolution
-        if (stormConf.containsKey("spring") && ctxt instanceof ConfigurableApplicationContext) {
-          Map springProps = (Map)stormConf.get("spring");
-          ((ConfigurableApplicationContext)ctxt).getEnvironment()
-            .getPropertySources().addFirst(new MapPropertySource("STORM_CONF", springProps));
+        if (ctxt instanceof ConfigurableApplicationContext) {
+          Map<String,Object> springProps = new HashMap<String,Object>();
+          for (Object key : stormConf.keySet()) {
+            if (!(key instanceof String))
+              continue;
+            Object valu = stormConf.get(key);
+            if (valu == null)
+              continue;
+
+            String propId = (String)key;
+            if (propId.startsWith("spring.")) {
+              springProps.put(propId.substring(7), valu);
+            }
+          }
+          if (!springProps.isEmpty())
+            ((ConfigurableApplicationContext)ctxt).getEnvironment()
+              .getPropertySources().addFirst(new MapPropertySource("STORM_CONF", springProps));
         }
         ctxt.refresh();
         spring = ctxt;
@@ -227,25 +250,27 @@ public class StreamingApp {
   }
 
   public int parallelism(String component) {
+    Object val = null;
     Object componentProps = (component != null) ? stormConf.get(component) : null;
     if (componentProps != null && componentProps instanceof Map) {
       Map map = (Map) componentProps;
-      Object val = map.get("parallelism");
-      if (val != null && val instanceof Number)
-        return ((Number) val).intValue();
+      val = map.get("parallelism");
+    } else {
+      val = stormConf.get(component+".parallelism"); // flattened
     }
-    return 1;
+    return (val != null && val instanceof Number) ? ((Number) val).intValue() : 1;
   }
 
   public int tickRate(String component) {
+    Object val = null;
     Object componentProps = (component != null) ? stormConf.get(component) : null;
     if (componentProps != null && componentProps instanceof Map) {
       Map map = (Map) componentProps;
-      Object val = map.get("tickRate");
-      if (val != null && val instanceof Number)
-        return ((Number) val).intValue();
+      val = map.get("tickRate");
+    } else {
+      val = stormConf.get(component+".tickRate");
     }
-    return 0;
+    return (val != null && val instanceof Number) ? ((Number) val).intValue() : 0;
   }
 
   /**
@@ -338,9 +363,9 @@ public class StreamingApp {
   public static Config getConfig(String env, File config) throws IOException {
     ConfigObject configObject = new ConfigSlurper(env).parse(readGroovyConfigScript(config));
     Config stormConf = new Config();
-    stormConf.putAll(configObject);
-
     Map flatten = configObject.flatten();
+    stormConf.putAll(flatten);
+
     Map<String, Class> dataTypes = new HashMap<String, Class>();
     dataTypes.put("topology.workers", Integer.class);
     dataTypes.put("topology.acker.executors", Integer.class);

@@ -62,7 +62,7 @@ public class SolrBoltActionTest extends TestSolrCloudClusterSupport {
     when(mockTuple.size()).thenReturn(2);
     when(mockTuple.getString(0)).thenReturn(docId);
     when(mockTuple.getValue(1)).thenReturn(testDoc);
-    SpringBolt.ExecuteResult result = sba.execute(mockTuple);
+    SpringBolt.ExecuteResult result = sba.execute(mockTuple, null);
     assertTrue(result == SpringBolt.ExecuteResult.ACK);
     cloudSolrServer.commit();
 

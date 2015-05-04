@@ -2,10 +2,12 @@ package com.lucidworks.storm.solr;
 
 import static com.lucidworks.storm.spring.SpringBolt.ExecuteResult;
 
+import backtype.storm.task.OutputCollector;
 import backtype.storm.tuple.Tuple;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Timer;
+import com.lucidworks.storm.spring.NamedValues;
 import com.lucidworks.storm.spring.StreamingDataAction;
 import com.lucidworks.storm.spring.TickTupleAware;
 import com.ryantenney.metrics.annotation.Metric;
@@ -68,7 +70,7 @@ public class SolrBoltAction implements StreamingDataAction, TickTupleAware {
     return ExecuteResult.IGNORED;
   }
 
-  public ExecuteResult execute(Tuple input) {
+  public ExecuteResult execute(Tuple input, OutputCollector outputCollector) {
 
     if (collection == null) {
       collection = cloudSolrClient.getDefaultCollection();
