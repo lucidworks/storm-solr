@@ -42,12 +42,32 @@
     </bean>
 
     <!--
+    Bean that uses com.fasterxml.jackson.databind.ObjectMapper to bind Java objects to JSON.
+    Change this reference if you need to customize how messages are transformed into JSON when using the
+    solrJsonBoltAction in your topology.
+     -->
+    <bean id="jsonContentStreamMapper" class="com.lucidworks.storm.solr.DefaultJsonContentStreamMapper">
+    </bean>
+
+    <!--
     Bolt "action" beans must be created with prototype scope if declared with parallelism > 1
     to avoid thread-safety issues
      -->
     <bean id="solrBoltAction" class="com.lucidworks.storm.solr.SolrBoltAction" scope="prototype">
         <property name="batchSize" value="100"/>
         <property name="bufferTimeoutMs" value="1000"/>
+    </bean>
+
+    <bean id="solrJsonBoltAction" class="com.lucidworks.storm.solr.SolrJsonBoltAction" scope="prototype">
+        <!-- see http://lucidworks.com/blog/indexing-custom-json-data/ -->
+        <property name="split" value="/"/>
+        <property name="fieldMappings">
+            <list>
+                <value>color_s:/user/profileTextColor</value>
+                <value>retweetcolor_s:/retweetedStatus/user/profileTextColor</value>
+                <value>$FQN:/**</value>
+            </list>
+        </property>
     </bean>
 
 </beans>

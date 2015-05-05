@@ -48,12 +48,6 @@ public class DefaultSolrInputDocumentMapper implements SolrInputDocumentMapper {
     this.fieldGuessingEnabled = fieldGuessingEnabled;
   }
 
-  public UpdateRequest createUpdateRequest(String collection) {
-    UpdateRequest req = new UpdateRequest();
-    req.setParam("collection", collection);
-    return req;
-  }
-
   public SolrInputDocument toInputDoc(String docId, Object obj) {
     return (obj instanceof SolrInputDocument) ? (SolrInputDocument)obj : autoMapToSolrInputDoc(docId, obj);
   }

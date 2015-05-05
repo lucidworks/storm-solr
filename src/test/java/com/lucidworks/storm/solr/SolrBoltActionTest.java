@@ -9,6 +9,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -23,7 +24,7 @@ import static org.junit.Assert.assertTrue;
  */
 public class SolrBoltActionTest extends TestSolrCloudClusterSupport {
 
-  private class TestDoc {
+  class TestDoc {
     public String id;
     public String text;
     public int number;
@@ -41,8 +42,8 @@ public class SolrBoltActionTest extends TestSolrCloudClusterSupport {
     }
   }
 
-  @Test
-  public void testIndexing() throws Exception {
+  @Before
+  public void setupCollection() throws Exception {
     String confName = "testConfig";
     File confDir = new File("src/test/resources/conf");
     String testCollection = "test";
@@ -50,7 +51,14 @@ public class SolrBoltActionTest extends TestSolrCloudClusterSupport {
     int replicationFactor = 1;
     createCollection(testCollection, numShards, replicationFactor, confName, confDir);
     cloudSolrServer.setDefaultCollection(testCollection);
+  }
 
+  @Test
+  public void testBoltAction() throws Exception {
+    doBoltActionTest();
+  }
+
+  protected void doBoltActionTest() throws Exception {
     SolrBoltAction sba = new SolrBoltAction();
     sba.batchSize = 1; // to avoid buffering docs
     sba.cloudSolrClient = cloudSolrServer; // Spring @Autowired property in a real env

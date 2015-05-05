@@ -7,7 +7,6 @@ import backtype.storm.tuple.Tuple;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Timer;
-import com.lucidworks.storm.spring.NamedValues;
 import com.lucidworks.storm.spring.StreamingDataAction;
 import com.lucidworks.storm.spring.TickTupleAware;
 import com.ryantenney.metrics.annotation.Metric;
@@ -64,7 +63,7 @@ public class SolrBoltAction implements StreamingDataAction, TickTupleAware {
 
   public ExecuteResult onTick() {
     // this catches the case where we have buffered docs, but don't see any more docs flowing in for a while
-    if (!batch.isEmpty() && (bufferTimeoutAtNanos < 0 || System.nanoTime() >= bufferTimeoutAtNanos))
+    if (batch != null && !batch.isEmpty() && (bufferTimeoutAtNanos < 0 || System.nanoTime() >= bufferTimeoutAtNanos))
       return flushBufferedDocs();
 
     return ExecuteResult.IGNORED;
@@ -88,6 +87,14 @@ public class SolrBoltAction implements StreamingDataAction, TickTupleAware {
     if (docId == null || docObj == null)
       return ExecuteResult.IGNORED; // nothing to index
 
+    return processInputDoc(docId, docObj);
+  }
+
+  /**
+   * Process an input document that has already been validated; good place to start for sub-classes to
+   * plug-in their own input Tuple processing logic.
+   */
+  protected ExecuteResult processInputDoc(String docId, Object docObj) {
     // default if not auto-wired
     if (solrInputDocumentMapper == null)
       solrInputDocumentMapper = new DefaultSolrInputDocumentMapper();
@@ -170,8 +177,14 @@ public class SolrBoltAction implements StreamingDataAction, TickTupleAware {
     this.bufferTimeoutMs = bufferTimeoutMs;
   }
 
+  public UpdateRequest createUpdateRequest(String collection) {
+    UpdateRequest req = new UpdateRequest();
+    req.setParam("collection", collection);
+    return req;
+  }
+
   protected void sendBatchToSolr(Collection<SolrInputDocument> batch) {
-    UpdateRequest req = solrInputDocumentMapper.createUpdateRequest(collection);
+    UpdateRequest req = createUpdateRequest(collection);
 
     if (log.isDebugEnabled())
       log.debug("Sending batch of " + batch.size() + " to collection " + collection);
@@ -192,6 +205,10 @@ public class SolrBoltAction implements StreamingDataAction, TickTupleAware {
           cloudSolrClient.request(req);
         } catch (Exception e1) {
           log.error("Retry send batch to collection "+collection+" failed due to: "+e1, e1);
+
+          if (failedBatches != null)
+            failedBatches.inc();
+
           if (e1 instanceof RuntimeException) {
             throw (RuntimeException)e1;
           } else {
@@ -205,9 +222,8 @@ public class SolrBoltAction implements StreamingDataAction, TickTupleAware {
       } else {
         log.error("Send batch to collection "+collection+" failed due to: "+e, e);
 
-        if (failedBatches != null) {
+        if (failedBatches != null)
           failedBatches.inc();
-        }
 
         if (e instanceof RuntimeException) {
           throw (RuntimeException)e;
@@ -220,7 +236,7 @@ public class SolrBoltAction implements StreamingDataAction, TickTupleAware {
     }
   }
 
-  private boolean shouldRetry(Exception exc) {
+  protected boolean shouldRetry(Exception exc) {
     Throwable rootCause = SolrException.getRootCause(exc);
     return (rootCause instanceof ConnectException || rootCause instanceof SocketException);
   }
