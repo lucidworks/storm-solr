@@ -17,7 +17,7 @@ public class ShardGrouping implements CustomStreamGrouping, Serializable {
   private transient CloudSolrClient cloudSolrClient;
   private transient DocCollection docCollection;
   private transient DocRouter docRouter;
-  private transient Map<String,Integer> shardIndexCache;
+  private transient Map<String, Integer> shardIndexCache;
 
   protected Map stormConf;
   protected String collection;
@@ -49,7 +49,7 @@ public class ShardGrouping implements CustomStreamGrouping, Serializable {
     if (values == null || values.size() < 1)
       return Collections.singletonList(targetTasks.get(0));
 
-    String docId = (String)values.get(0);
+    String docId = (String) values.get(0);
     if (docId == null)
       return Collections.singletonList(targetTasks.get(0));
 
@@ -75,9 +75,9 @@ public class ShardGrouping implements CustomStreamGrouping, Serializable {
 
     Collection<Slice> shards = docCollection.getSlices();
     if (shards == null || shards.size() == 0)
-      throw new IllegalStateException("Collection '"+collection+"' does not have any shards!");
+      throw new IllegalStateException("Collection '" + collection + "' does not have any shards!");
 
-    shardIndexCache = new HashMap<String,Integer>(20);
+    shardIndexCache = new HashMap<String, Integer>(20);
     int s = 0;
     for (Slice next : shards) {
       shardIndexCache.put(next.getName(), s);

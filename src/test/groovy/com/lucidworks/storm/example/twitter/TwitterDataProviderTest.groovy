@@ -22,7 +22,7 @@ class TwitterDataProviderTest extends StreamingDataProviderTestBase {
 
     Thread.sleep(5000) // give a little time to connect to twitter and start receiving tweets
 
-    NamedValues record = new NamedValues(new Fields("id","tweet"))
+    NamedValues record = new NamedValues(new Fields("id", "tweet"))
     assertTrue provider.next(record)
     assertTrue record.messageId == null
 

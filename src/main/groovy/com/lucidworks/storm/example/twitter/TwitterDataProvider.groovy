@@ -73,7 +73,7 @@ class TwitterDataProvider implements StreamingDataProvider {
   boolean next(NamedValues record) throws Exception {
     Status status = queue.poll();
     if (status) {
-      record.set("id", "tweet-"+status.getId())
+      record.set("id", "tweet-" + status.getId())
       record.set("tweet", status)
       return true
     }

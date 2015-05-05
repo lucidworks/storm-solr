@@ -22,7 +22,7 @@ public class DefaultSolrInputDocumentMapper implements SolrInputDocumentMapper {
 
   protected boolean fieldGuessingEnabled = false;
   protected String idFieldName = "id";
-  protected Map<String,String> dynamicFieldOverrides = null;
+  protected Map<String, String> dynamicFieldOverrides = null;
 
   public Map<String, String> getDynamicFieldOverrides() {
     return dynamicFieldOverrides;
@@ -49,11 +49,10 @@ public class DefaultSolrInputDocumentMapper implements SolrInputDocumentMapper {
   }
 
   public SolrInputDocument toInputDoc(String docId, Object obj) {
-    return (obj instanceof SolrInputDocument) ? (SolrInputDocument)obj : autoMapToSolrInputDoc(docId, obj);
+    return (obj instanceof SolrInputDocument) ? (SolrInputDocument) obj : autoMapToSolrInputDoc(docId, obj);
   }
 
-  protected SolrInputDocument autoMapToSolrInputDoc(String docId, Object obj)
-  {
+  protected SolrInputDocument autoMapToSolrInputDoc(String docId, Object obj) {
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField(idFieldName, docId);
     if (obj == null)
@@ -71,7 +70,8 @@ public class DefaultSolrInputDocumentMapper implements SolrInputDocumentMapper {
         Object value = null;
         try {
           value = f.get(obj);
-        } catch (IllegalAccessException e) {}
+        } catch (IllegalAccessException e) {
+        }
 
         if (value != null) {
           String fieldName = f.getName();
@@ -96,7 +96,7 @@ public class DefaultSolrInputDocumentMapper implements SolrInputDocumentMapper {
       BeanInfo info = Introspector.getBeanInfo(objClass);
       props = info.getPropertyDescriptors();
     } catch (IntrospectionException e) {
-      log.warn("Can't get BeanInfo for class: "+objClass);
+      log.warn("Can't get BeanInfo for class: " + objClass);
     }
 
     if (props != null) {
@@ -112,7 +112,7 @@ public class DefaultSolrInputDocumentMapper implements SolrInputDocumentMapper {
             value = readMethod.invoke(obj);
           } catch (Exception e) {
             log.debug("Failed to invoke read method for property '" + pd.getName() +
-              "' on object of type '" + objClass.getName()+"' due to: "+e);
+              "' on object of type '" + objClass.getName() + "' due to: " + e);
           }
 
           if (value != null) {
@@ -140,8 +140,7 @@ public class DefaultSolrInputDocumentMapper implements SolrInputDocumentMapper {
                              String fieldName,
                              Object value,
                              Class type,
-                             String dynamicFieldSuffix)
-  {
+                             String dynamicFieldSuffix) {
     if (type.isArray())
       return; // TODO: Array types not supported yet ...
 
@@ -149,7 +148,7 @@ public class DefaultSolrInputDocumentMapper implements SolrInputDocumentMapper {
       dynamicFieldSuffix = getDefaultDynamicFieldMapping(type);
       // treat strings with multiple terms as text only if using the default!
       if ("_s".equals(dynamicFieldSuffix)) {
-        String str = (String)value;
+        String str = (String) value;
         if (str.indexOf(" ") != -1)
           dynamicFieldSuffix = "_t";
       }

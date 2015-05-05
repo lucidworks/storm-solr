@@ -11,7 +11,7 @@ public class DefaultJsonContentStreamMapper implements JsonContentStreamMapper {
   protected ObjectMapper mapper = new ObjectMapper();
 
   public ContentStream toContentStream(String docId, Object docObj) throws Exception {
-    String jsonString = (docObj instanceof String) ? (String)docObj : mapper.writeValueAsString(docObj);
+    String jsonString = (docObj instanceof String) ? (String) docObj : mapper.writeValueAsString(docObj);
     ContentStreamBase.StringStream ss = new ContentStreamBase.StringStream(jsonString);
     ss.setContentType(JSON_CONTENT_TYPE);
     return ss;

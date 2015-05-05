@@ -1,4 +1,4 @@
-package com.lucidworks.storm.example.twitter
+package com.lucidworks.storm.example.hdfs
 
 import backtype.storm.generated.StormTopology
 import backtype.storm.topology.TopologyBuilder
@@ -9,15 +9,15 @@ import com.lucidworks.storm.solr.ShardGrouping
 import com.lucidworks.storm.spring.SpringBolt
 import com.lucidworks.storm.spring.SpringSpout
 
-class TwitterToSolrTopology implements StormTopologyFactory {
+class HdfsDirectoryToSolrTopology implements StormTopologyFactory {
 
-  static final Fields spoutFields = new Fields("id", "tweet")
+  static Fields spoutFields = new Fields("fileUri")
 
-  String getName() { return "twitter-to-solr" }
+  String getName() { return "hdfs-to-solr" }
 
   StormTopology build(StreamingApp app) throws Exception {
     // setup spout and bolts for accessing Spring-managed POJOs at runtime
-    SpringSpout twitterSpout = new SpringSpout("twitterDataProvider", spoutFields);
+    SpringSpout hdfsSpout = new SpringSpout("hdfsDirectoryListingDataProvider", spoutFields);
     SpringBolt solrBolt = new SpringBolt("solrBoltAction", app.tickRate("solrBolt"));
 
     // Route messages based on shard assignment in Solr (because we can)
@@ -28,8 +28,8 @@ class TwitterToSolrTopology implements StormTopologyFactory {
 
     // wire up the topology to read tweets and send to Solr
     TopologyBuilder builder = new TopologyBuilder()
-    builder.setSpout("twitterSpout", twitterSpout, app.parallelism("twitterSpout"))
-    builder.setBolt("solrBolt", solrBolt, numShards).customGrouping("twitterSpout", shardGrouping)
+    builder.setSpout("hdfsSpout", hdfsSpout, app.parallelism("hdfsSpout"))
+    builder.setBolt("solrBolt", solrBolt, numShards).customGrouping("hdfsSpout", shardGrouping)
 
     return builder.createTopology()
   }

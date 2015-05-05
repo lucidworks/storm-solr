@@ -40,7 +40,7 @@ public class SolrJsonBoltAction extends SolrBoltAction {
       contentStream = jsonContentStreamMapper.toContentStream(docId, docObj);
     } catch (Exception exc) {
       if (exc instanceof RuntimeException) {
-        throw (RuntimeException)exc;
+        throw (RuntimeException) exc;
       } else {
         throw new RuntimeException(exc);
       }
@@ -70,7 +70,7 @@ public class SolrJsonBoltAction extends SolrBoltAction {
 
       Exception failedExc = null;
       if (shouldRetry(e)) {
-        log.error("Send JSON to collection "+collection+" failed due to "+e+"; will retry ...");
+        log.error("Send JSON to collection " + collection + " failed due to " + e + "; will retry ...");
         try {
           Thread.sleep(5000);
         } catch (InterruptedException ie) {
@@ -93,7 +93,7 @@ public class SolrJsonBoltAction extends SolrBoltAction {
           failedUpdates.inc();
 
         if (failedExc instanceof RuntimeException) {
-          throw (RuntimeException)failedExc;
+          throw (RuntimeException) failedExc;
         } else {
           throw new RuntimeException(failedExc);
         }

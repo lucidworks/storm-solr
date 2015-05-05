@@ -75,10 +75,10 @@ public class SolrBoltActionTest extends TestSolrCloudClusterSupport {
     cloudSolrServer.commit();
 
     // verify the object to Solr mapping worked correctly using reflection and dynamic fields
-    SolrQuery query = new SolrQuery("id:"+docId);
+    SolrQuery query = new SolrQuery("id:" + docId);
     QueryResponse qr = cloudSolrServer.query(query);
     SolrDocumentList results = qr.getResults();
-    assertTrue(results.getNumFound()==1);
+    assertTrue(results.getNumFound() == 1);
     SolrDocument doc = results.get(0);
     assertNotNull(doc);
     assertEquals("foo", doc.getFirstValue("text_s"));

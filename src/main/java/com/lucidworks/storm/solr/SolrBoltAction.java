@@ -78,8 +78,8 @@ public class SolrBoltAction implements StreamingDataAction, TickTupleAware {
 
       String mapper = (solrInputDocumentMapper != null ? solrInputDocumentMapper.getClass().getSimpleName()
         : DefaultSolrInputDocumentMapper.class.getSimpleName());
-      log.info("Configured to send docs to "+collection+
-        " using mapper="+mapper+", batchSize="+batchSize+", and bufferTimeoutMs="+bufferTimeoutMs);
+      log.info("Configured to send docs to " + collection +
+        " using mapper=" + mapper + ", batchSize=" + batchSize + ", and bufferTimeoutMs=" + bufferTimeoutMs);
     }
 
     String docId = input.getString(0);
@@ -194,7 +194,7 @@ public class SolrBoltAction implements StreamingDataAction, TickTupleAware {
       cloudSolrClient.request(req);
     } catch (Exception e) {
       if (shouldRetry(e)) {
-        log.error("Send batch to collection "+collection+" failed due to "+e+"; will retry ...");
+        log.error("Send batch to collection " + collection + " failed due to " + e + "; will retry ...");
         try {
           Thread.sleep(5000);
         } catch (InterruptedException ie) {
@@ -204,13 +204,13 @@ public class SolrBoltAction implements StreamingDataAction, TickTupleAware {
         try {
           cloudSolrClient.request(req);
         } catch (Exception e1) {
-          log.error("Retry send batch to collection "+collection+" failed due to: "+e1, e1);
+          log.error("Retry send batch to collection " + collection + " failed due to: " + e1, e1);
 
           if (failedBatches != null)
             failedBatches.inc();
 
           if (e1 instanceof RuntimeException) {
-            throw (RuntimeException)e1;
+            throw (RuntimeException) e1;
           } else {
             throw new RuntimeException(e1);
           }
@@ -220,13 +220,13 @@ public class SolrBoltAction implements StreamingDataAction, TickTupleAware {
           }
         }
       } else {
-        log.error("Send batch to collection "+collection+" failed due to: "+e, e);
+        log.error("Send batch to collection " + collection + " failed due to: " + e, e);
 
         if (failedBatches != null)
           failedBatches.inc();
 
         if (e instanceof RuntimeException) {
-          throw (RuntimeException)e;
+          throw (RuntimeException) e;
         } else {
           throw new RuntimeException(e);
         }

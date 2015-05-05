@@ -72,8 +72,8 @@ public class StreamingApp {
    * Returns the global singleton to the Spring framework ApplicationContext per Storm Topology per JVM.
    */
   public static final ApplicationContext spring(Map stormConf) {
-    String stormId = (String)stormConf.get("storm.id");
-    String springXml = (String)stormConf.get("springXml");
+    String stormId = (String) stormConf.get("storm.id");
+    String springXml = (String) stormConf.get("springXml");
     if (springXml == null) springXml = "storm-solr-spring.xml";
 
     // one per JVM
@@ -84,15 +84,15 @@ public class StreamingApp {
 
         InputStream res = StreamingApp.class.getClassLoader().getResourceAsStream(springXml);
         if (res != null) {
-          appLog.info("Classpath resource '"+springXml+"' FOUND by classloader: "+StreamingApp.class.getClassLoader());
+          appLog.info("Classpath resource '" + springXml + "' FOUND by classloader: " + StreamingApp.class.getClassLoader());
         } else {
-          appLog.warn("Classpath resource '"+springXml+"' not found by classloader: "+StreamingApp.class.getClassLoader());
+          appLog.warn("Classpath resource '" + springXml + "' not found by classloader: " + StreamingApp.class.getClassLoader());
         }
 
         ClassPathXmlApplicationContext ctxt = new ClassPathXmlApplicationContext(new String[]{springXml}, false /* don't refresh yet */);
         // inject the Spring closure from the Storm config map into the Spring context for property resolution
         if (ctxt instanceof ConfigurableApplicationContext) {
-          Map<String,Object> springProps = new HashMap<String,Object>();
+          Map<String, Object> springProps = new HashMap<String, Object>();
           for (Object key : stormConf.keySet()) {
             if (!(key instanceof String))
               continue;
@@ -100,13 +100,13 @@ public class StreamingApp {
             if (valu == null)
               continue;
 
-            String propId = (String)key;
+            String propId = (String) key;
             if (propId.startsWith("spring.")) {
               springProps.put(propId.substring(7), valu);
             }
           }
           if (!springProps.isEmpty())
-            ((ConfigurableApplicationContext)ctxt).getEnvironment()
+            ((ConfigurableApplicationContext) ctxt).getEnvironment()
               .getPropertySources().addFirst(new MapPropertySource("STORM_CONF", springProps));
         }
         ctxt.refresh();
@@ -256,7 +256,7 @@ public class StreamingApp {
       Map map = (Map) componentProps;
       val = map.get("parallelism");
     } else {
-      val = stormConf.get(component+".parallelism"); // flattened
+      val = stormConf.get(component + ".parallelism"); // flattened
     }
     return (val != null && val instanceof Number) ? ((Number) val).intValue() : 1;
   }
@@ -268,7 +268,7 @@ public class StreamingApp {
       Map map = (Map) componentProps;
       val = map.get("tickRate");
     } else {
-      val = stormConf.get(component+".tickRate");
+      val = stormConf.get(component + ".tickRate");
     }
     return (val != null && val instanceof Number) ? ((Number) val).intValue() : 0;
   }

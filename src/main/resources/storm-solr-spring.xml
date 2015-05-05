@@ -14,20 +14,20 @@
     <context:component-scan base-package="org.lucidworks.storm"/>
 
     <!-- Metrics support, sends periodic reports to the logger -->
-    <metrics:metric-registry id="metrics" />
-    <metrics:annotation-driven metric-registry="metrics" />
-    <metrics:reporter type="slf4j" metric-registry="metrics" period="1m" />
+    <metrics:metric-registry id="metrics"/>
+    <metrics:annotation-driven metric-registry="metrics"/>
+    <metrics:reporter type="slf4j" metric-registry="metrics" period="1m"/>
 
     <bean id="twitterDataProvider" class="com.lucidworks.storm.example.twitter.TwitterDataProvider">
-      <property name="keywords">
-        <list>
-            <value>solr</value>
-            <value>lucene</value>
-            <value>spark</value>
-            <value>hadoop</value>
-            <value>storm</value>
-        </list>
-      </property>
+        <property name="keywords">
+            <list>
+                <value>solr</value>
+                <value>lucene</value>
+                <value>spark</value>
+                <value>hadoop</value>
+                <value>storm</value>
+            </list>
+        </property>
     </bean>
 
     <bean id="cloudSolrClient" class="org.apache.solr.client.solrj.impl.CloudSolrClient">
@@ -68,6 +68,12 @@
                 <value>$FQN:/**</value>
             </list>
         </property>
+    </bean>
+
+    <bean id="hdfsDirectoryListingDataProvider"
+          class="com.lucidworks.storm.example.hdfs.HdfsDirectoryListingDataProvider" scope="prototype">
+        <property name="dirPath" value="${hdfsDirPath}"/>
+        <property name="globFilter" value="${hdfsGlobFilter}"/>
     </bean>
 
 </beans>

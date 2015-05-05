@@ -25,11 +25,11 @@ public class SolrJsonBoltActionTest extends SolrBoltActionTest {
     // Mock the Storm tuple
     String docId = "1";
     String testDoc = "{" +
-      "'id':'1',"+
-      "'text':'foo',"+
-      "'number':10"+
+      "'id':'1'," +
+      "'text':'foo'," +
+      "'number':10" +
       "}";
-    testDoc = testDoc.replace('\'','"');
+    testDoc = testDoc.replace('\'', '"');
 
     Tuple mockTuple = mock(Tuple.class);
     when(mockTuple.size()).thenReturn(2);
@@ -40,10 +40,10 @@ public class SolrJsonBoltActionTest extends SolrBoltActionTest {
     cloudSolrServer.commit();
 
     // verify the object to Solr mapping worked correctly using reflection and dynamic fields
-    SolrQuery query = new SolrQuery("id:"+docId);
+    SolrQuery query = new SolrQuery("id:" + docId);
     QueryResponse qr = cloudSolrServer.query(query);
     SolrDocumentList results = qr.getResults();
-    assertTrue(results.getNumFound()==1);
+    assertTrue(results.getNumFound() == 1);
     SolrDocument doc = results.get(0);
     assertNotNull(doc);
     assertEquals("foo", doc.getFirstValue("text"));

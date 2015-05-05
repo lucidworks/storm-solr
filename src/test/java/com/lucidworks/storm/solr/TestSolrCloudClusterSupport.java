@@ -43,7 +43,7 @@ public abstract class TestSolrCloudClusterSupport {
     try {
       cluster = new MiniSolrCloudCluster(1, null, tempDir, solrXml, null, null);
     } catch (Exception exc) {
-      log.error("Failed to initialize a MiniSolrCloudCluster due to: "+exc, exc);
+      log.error("Failed to initialize a MiniSolrCloudCluster due to: " + exc, exc);
       throw exc;
     }
 
@@ -70,8 +70,8 @@ public abstract class TestSolrCloudClusterSupport {
 
   protected static void createCollection(String collectionName, int numShards, int replicationFactor, String confName, File confDir) throws Exception {
     if (confDir != null) {
-      assertTrue("Specified Solr config directory '"+
-        confDir.getAbsolutePath()+"' not found!", confDir.isDirectory());
+      assertTrue("Specified Solr config directory '" +
+        confDir.getAbsolutePath() + "' not found!", confDir.isDirectory());
 
       // upload the test configs
       SolrZkClient zkClient = cloudSolrServer.getZkStateReader().getZkClient();
@@ -123,14 +123,14 @@ public abstract class TestSolrCloudClusterSupport {
         assertTrue(replicas.size() == rf);
         leader = shard.getLeader();
         assertNotNull(leader);
-        log.info("Found "+replicas.size()+" replicas and leader on "+
-          leader.getNodeName()+" for "+shardId+" in "+testCollectionName);
+        log.info("Found " + replicas.size() + " replicas and leader on " +
+          leader.getNodeName() + " for " + shardId + " in " + testCollectionName);
 
         // ensure all replicas are "active"
         for (Replica replica : replicas) {
           String replicaState = replica.getStr(ZkStateReader.STATE_PROP);
           if (!ZkStateReader.ACTIVE.equals(replicaState)) {
-            log.info("Replica " + replica.getName() + " for shard "+shardId+" is currently " + replicaState);
+            log.info("Replica " + replica.getName() + " for shard " + shardId + " is currently " + replicaState);
             allReplicasUp = false;
           }
         }
@@ -139,17 +139,18 @@ public abstract class TestSolrCloudClusterSupport {
       if (!allReplicasUp) {
         try {
           Thread.sleep(500L);
-        } catch (Exception ignoreMe) {}
+        } catch (Exception ignoreMe) {
+        }
         waitMs += 500L;
       }
     } // end while
 
     if (!allReplicasUp)
-      fail("Didn't see all replicas for "+testCollectionName+
+      fail("Didn't see all replicas for " + testCollectionName +
         " come up within " + maxWaitMs + " ms! ClusterState: " + printClusterStateInfo(testCollectionName));
 
     long diffMs = (System.currentTimeMillis() - startMs);
-    log.info("Took " + diffMs + " ms to see all replicas become active for "+testCollectionName);
+    log.info("Took " + diffMs + " ms to see all replicas become active for " + testCollectionName);
   }
 
   protected static String printClusterStateInfo(String collection) throws Exception {
@@ -159,7 +160,7 @@ public abstract class TestSolrCloudClusterSupport {
     if (collection != null) {
       cs = clusterState.getCollection(collection).toString();
     } else {
-      Map<String,DocCollection> map = new HashMap<String,DocCollection>();
+      Map<String, DocCollection> map = new HashMap<String, DocCollection>();
       for (String coll : clusterState.getCollections())
         map.put(coll, clusterState.getCollection(coll));
       CharArr out = new CharArr();
