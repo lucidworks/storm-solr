@@ -16,9 +16,7 @@ class TwitterToSolrTopology implements StormTopologyFactory {
   StormTopology build(StreamingApp app) throws Exception {
     // setup spout and bolts for accessing Spring-managed POJOs at runtime
     SpringSpout twitterSpout = new SpringSpout("twitterDataProvider", new Fields("id","tweet"));
-    //SpringBolt solrBolt = new SpringBolt("solrBoltAction", app.tickRate("solrBolt"));
-
-    SpringBolt solrBolt = new SpringBolt("solrJsonBoltAction", app.tickRate("solrBolt"));
+    SpringBolt solrBolt = new SpringBolt("solrBoltAction", app.tickRate("solrBolt"));
 
     // Route messages based on shard assignment in Solr (because we can)
     // and set the parallelism to the number of shards in the collection
