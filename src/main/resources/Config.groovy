@@ -1,7 +1,7 @@
 environments {
 
   twitterSpout.parallelism = 1
-  solrBolt.parallelism = 2
+  csvParserBolt.parallelism = 2
   solrBolt.tickRate = 5
 
   maxPendingMessages = -1
@@ -17,7 +17,8 @@ environments {
     spring.defaultCollection = "gettingstarted"
     spring.fieldGuessingEnabled = true
 
-    spring.hdfsDirPath = "hdfs://localhost:9000/csv_files"
+    spring.fs.defaultFS = "hdfs://localhost:9000"
+    spring.hdfsDirPath = "/user/timpotter/csv_files"
     spring.hdfsGlobFilter = "*.csv"
   }
 

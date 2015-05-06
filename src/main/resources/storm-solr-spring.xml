@@ -70,10 +70,22 @@
         </property>
     </bean>
 
+    <bean id="hdfsFileSystemProvider" class="com.lucidworks.storm.example.hdfs.HdfsFileSystemProvider">
+        <property name="hdfsConfig">
+            <map>
+                <entry key="fs.defaultFS" value="${fs.defaultFS}"/>
+            </map>
+        </property>
+    </bean>
+
     <bean id="hdfsDirectoryListingDataProvider"
           class="com.lucidworks.storm.example.hdfs.HdfsDirectoryListingDataProvider" scope="prototype">
         <property name="dirPath" value="${hdfsDirPath}"/>
         <property name="globFilter" value="${hdfsGlobFilter}"/>
+    </bean>
+
+    <bean id="csvParserBoltAction"
+          class="com.lucidworks.storm.example.hdfs.CsvParserBoltAction" scope="prototype">
     </bean>
 
 </beans>

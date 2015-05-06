@@ -53,6 +53,10 @@ public class SpringBolt extends BaseRichBolt {
     this(boltBeanId, null, tickRate);
   }
 
+  public SpringBolt(String boltBeanId, Fields outputFields) {
+    this(boltBeanId, outputFields, -1);
+  }
+
   public SpringBolt(String boltBeanId, Fields outputFields, int tickRate) {
     this.boltLogicBeanId = boltBeanId;
     this.outputFields = outputFields;

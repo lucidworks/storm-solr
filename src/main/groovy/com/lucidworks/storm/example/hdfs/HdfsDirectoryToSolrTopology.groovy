@@ -18,6 +18,7 @@ class HdfsDirectoryToSolrTopology implements StormTopologyFactory {
   StormTopology build(StreamingApp app) throws Exception {
     // setup spout and bolts for accessing Spring-managed POJOs at runtime
     SpringSpout hdfsSpout = new SpringSpout("hdfsDirectoryListingDataProvider", spoutFields);
+    SpringBolt csvParserBolt = new SpringBolt("csvParserBoltAction", new Fields("id", ""));
     SpringBolt solrBolt = new SpringBolt("solrBoltAction", app.tickRate("solrBolt"));
 
     // Route messages based on shard assignment in Solr (because we can)
@@ -29,7 +30,8 @@ class HdfsDirectoryToSolrTopology implements StormTopologyFactory {
     // wire up the topology to read tweets and send to Solr
     TopologyBuilder builder = new TopologyBuilder()
     builder.setSpout("hdfsSpout", hdfsSpout, app.parallelism("hdfsSpout"))
-    builder.setBolt("solrBolt", solrBolt, numShards).customGrouping("hdfsSpout", shardGrouping)
+    builder.setBolt("csvParserBolt", csvParserBolt, app.parallelism("csvParserBolt")).shuffleGrouping("hdfsSpout")
+    builder.setBolt("solrBolt", solrBolt, numShards).customGrouping("csvParserBolt", shardGrouping)
 
     return builder.createTopology()
   }

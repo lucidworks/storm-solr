@@ -52,11 +52,21 @@ public class DefaultSolrInputDocumentMapper implements SolrInputDocumentMapper {
     return (obj instanceof SolrInputDocument) ? (SolrInputDocument) obj : autoMapToSolrInputDoc(docId, obj);
   }
 
+  protected SolrInputDocument map2doc(SolrInputDocument doc, Map map) {
+    for (Object key : map.keySet()) {
+      doc.setField((String)key, map.get(key));
+    }
+    return doc;
+  }
+
   protected SolrInputDocument autoMapToSolrInputDoc(String docId, Object obj) {
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField(idFieldName, docId);
     if (obj == null)
       return doc;
+
+    if (obj instanceof Map)
+      return map2doc(doc, (Map)obj);
 
     Class objClass = obj.getClass();
     Set<String> fields = new HashSet<String>();
