@@ -35,6 +35,11 @@
         <property name="defaultCollection" value="${defaultCollection}"/>
     </bean>
 
+    <bean id="solrUpdateRequestStrategy" class="com.lucidworks.storm.solr.DefaultUpdateRequestStrategy">
+      <property name="waitSecsBetweenRetries" value="5"/>
+      <property name="maxRetryAttempts" value="2"/>
+    </bean>
+
     <!-- You can plug-in a different mapping impl by changing the class of this bean -->
     <bean id="solrInputDocumentMapper" class="com.lucidworks.storm.solr.DefaultSolrInputDocumentMapper">
         <property name="idFieldName" value="id"/>
@@ -44,18 +49,28 @@
     <!--
     Bean that uses com.fasterxml.jackson.databind.ObjectMapper to bind Java objects to JSON.
     Change this reference if you need to customize how messages are transformed into JSON when using the
-    solrJsonBoltAction in your topology.
+    solrJsonBoltAction or fusionBoltAction in your topology.
      -->
     <bean id="jsonContentStreamMapper" class="com.lucidworks.storm.solr.DefaultJsonContentStreamMapper">
     </bean>
+
+  <bean id="hdfsFileSystemProvider" class="com.lucidworks.storm.example.hdfs.HdfsFileSystemProvider">
+    <property name="hdfsConfig">
+      <map>
+        <entry key="fs.defaultFS" value="${fs.defaultFS}"/>
+      </map>
+    </property>
+  </bean>
 
     <!--
     Bolt "action" beans must be created with prototype scope if declared with parallelism > 1
     to avoid thread-safety issues
      -->
     <bean id="solrBoltAction" class="com.lucidworks.storm.solr.SolrBoltAction" scope="prototype">
-        <property name="batchSize" value="100"/>
-        <property name="bufferTimeoutMs" value="1000"/>
+        <property name="solrInputDocumentMapper" ref="solrInputDocumentMapper"/>
+        <property name="maxBufferSize" value="${maxBufferSize}"/>
+        <property name="bufferTimeoutMs" value="${bufferTimeoutMs}"/>
+        <property name="updateRequestStrategy" ref="solrUpdateRequestStrategy"/>
     </bean>
 
     <bean id="solrJsonBoltAction" class="com.lucidworks.storm.solr.SolrJsonBoltAction" scope="prototype">
@@ -68,14 +83,8 @@
                 <value>$FQN:/**</value>
             </list>
         </property>
-    </bean>
-
-    <bean id="hdfsFileSystemProvider" class="com.lucidworks.storm.example.hdfs.HdfsFileSystemProvider">
-        <property name="hdfsConfig">
-            <map>
-                <entry key="fs.defaultFS" value="${fs.defaultFS}"/>
-            </map>
-        </property>
+        <property name="jsonContentStreamMapper" ref="jsonContentStreamMapper"/>
+        <property name="updateRequestStrategy" ref="solrUpdateRequestStrategy"/>
     </bean>
 
     <bean id="hdfsDirectoryListingDataProvider"
@@ -86,6 +95,15 @@
 
     <bean id="csvParserBoltAction"
           class="com.lucidworks.storm.example.hdfs.CsvParserBoltAction" scope="prototype">
+    </bean>
+
+    <bean id="fusionBoltAction" class="com.lucidworks.storm.fusion.FusionBoltAction" scope="prototype">
+      <constructor-arg index="0" value="${fusionEndpoints}"/>
+      <constructor-arg index="1" value="${fusionUser}"/>
+      <constructor-arg index="2" value="${fusionPassword}"/>
+      <property name="updatePath" value="${fusionUpdatePath}"/>
+      <property name="jsonContentStreamMapper" ref="jsonContentStreamMapper"/>
+      <property name="updateRequestStrategy" ref="solrUpdateRequestStrategy"/>
     </bean>
 
 </beans>

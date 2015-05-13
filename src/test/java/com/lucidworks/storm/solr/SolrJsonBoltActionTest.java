@@ -18,9 +18,9 @@ public class SolrJsonBoltActionTest extends SolrBoltActionTest {
 
   @Override
   protected void doBoltActionTest() throws Exception {
-    SolrJsonBoltAction sba = new SolrJsonBoltAction();
-    sba.batchSize = 1; // to avoid buffering docs
-    sba.cloudSolrClient = cloudSolrServer; // Spring @Autowired property in a real env
+    SolrJsonBoltAction sba = new SolrJsonBoltAction(cloudSolrServer);
+    sba.setUpdateRequestStrategy(new DefaultUpdateRequestStrategy());
+    sba.setMaxBufferSize(1); // to avoid buffering docs
 
     // Mock the Storm tuple
     String docId = "1";

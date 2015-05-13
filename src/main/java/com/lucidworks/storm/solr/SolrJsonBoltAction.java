@@ -3,6 +3,7 @@ package com.lucidworks.storm.solr;
 import com.codahale.metrics.Counter;
 import com.ryantenney.metrics.annotation.Metric;
 import org.apache.log4j.Logger;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStream;
@@ -29,6 +30,11 @@ public class SolrJsonBoltAction extends SolrBoltAction {
   protected String updatePath = "/update/json/docs";
   protected String split;
   protected List<String> fieldMappings;
+
+  @Autowired
+  public SolrJsonBoltAction(CloudSolrClient cloudSolrClient) {
+    super(cloudSolrClient);
+  }
 
   @Override
   protected ExecuteResult processInputDoc(String docId, Object docObj) {
@@ -64,42 +70,7 @@ public class SolrJsonBoltAction extends SolrBoltAction {
     }
     req.addContentStream(contentStream);
 
-    try {
-      cloudSolrClient.request(req);
-    } catch (Exception e) {
-
-      Exception failedExc = null;
-      if (shouldRetry(e)) {
-        log.error("Send JSON to collection " + collection + " failed due to " + e + "; will retry ...");
-        try {
-          Thread.sleep(5000);
-        } catch (InterruptedException ie) {
-          Thread.interrupted();
-        }
-
-        try {
-          cloudSolrClient.request(req);
-          failedExc = null;
-        } catch (Exception innerExc) {
-          failedExc = innerExc;
-        }
-      } else {
-        failedExc = e;
-      }
-
-      if (failedExc != null) {
-
-        if (failedUpdates != null)
-          failedUpdates.inc();
-
-        if (failedExc instanceof RuntimeException) {
-          throw (RuntimeException) failedExc;
-        } else {
-          throw new RuntimeException(failedExc);
-        }
-      }
-
-    }
+    updateRequestStrategy.sendUpdateRequest(cloudSolrClient, collection, req);
 
     if (indexedCounter != null)
       indexedCounter.inc();

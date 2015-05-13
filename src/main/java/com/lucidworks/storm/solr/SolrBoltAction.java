@@ -13,12 +13,9 @@ import com.ryantenney.metrics.annotation.Metric;
 import org.apache.log4j.Logger;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.net.ConnectException;
-import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -32,13 +29,7 @@ import java.util.concurrent.TimeUnit;
 public class SolrBoltAction implements StreamingDataAction, TickTupleAware {
 
   public static Logger log = Logger.getLogger(SolrBoltAction.class);
-
-  @Autowired
-  public CloudSolrClient cloudSolrClient;
-
-  @Autowired
-  public SolrInputDocumentMapper solrInputDocumentMapper;
-
+  
   @Metric
   public Timer sendBatchToSolr;
 
@@ -48,22 +39,24 @@ public class SolrBoltAction implements StreamingDataAction, TickTupleAware {
   @Metric
   public Histogram batchSizeHisto;
 
-  @Metric
-  public Counter retriedBatches;
-
-  @Metric
-  public Counter failedBatches;
-
+  protected CloudSolrClient cloudSolrClient;
+  protected SolrInputDocumentMapper solrInputDocumentMapper;
   protected String collection; // defaults to the default set on the cloud client
-  protected int batchSize = 100; // avoids sending 100's of requests per second to Solr in high-throughput envs
-  protected List<SolrInputDocument> batch;
+  protected int maxBufferSize = 100; // avoids sending 100's of requests per second to Solr in high-throughput envs
+  protected List<SolrInputDocument> buffer;
   protected long bufferTimeoutMs = 500L;
+  protected SolrUpdateRequestStrategy updateRequestStrategy;
 
   private long bufferTimeoutAtNanos = -1L;
 
+  @Autowired
+  public SolrBoltAction(CloudSolrClient cloudSolrClient) {
+    this.cloudSolrClient = cloudSolrClient;
+  }
+
   public ExecuteResult onTick() {
     // this catches the case where we have buffered docs, but don't see any more docs flowing in for a while
-    if (batch != null && !batch.isEmpty() && (bufferTimeoutAtNanos < 0 || System.nanoTime() >= bufferTimeoutAtNanos))
+    if (buffer != null && !buffer.isEmpty() && (bufferTimeoutAtNanos < 0 || System.nanoTime() >= bufferTimeoutAtNanos))
       return flushBufferedDocs();
 
     return ExecuteResult.IGNORED;
@@ -79,7 +72,7 @@ public class SolrBoltAction implements StreamingDataAction, TickTupleAware {
       String mapper = (solrInputDocumentMapper != null ? solrInputDocumentMapper.getClass().getSimpleName()
         : DefaultSolrInputDocumentMapper.class.getSimpleName());
       log.info("Configured to send docs to " + collection +
-        " using mapper=" + mapper + ", batchSize=" + batchSize + ", and bufferTimeoutMs=" + bufferTimeoutMs);
+        " using mapper=" + mapper + ", maxBufferSize=" + maxBufferSize + ", and bufferTimeoutMs=" + bufferTimeoutMs);
     }
 
     String docId = input.getString(0);
@@ -107,13 +100,13 @@ public class SolrBoltAction implements StreamingDataAction, TickTupleAware {
   }
 
   protected ExecuteResult bufferDoc(SolrInputDocument doc) {
-    if (batch == null)
-      batch = new ArrayList<SolrInputDocument>(batchSize);
+    if (buffer == null)
+      buffer = new ArrayList<SolrInputDocument>(maxBufferSize);
 
-    batch.add(doc);
+    buffer.add(doc);
 
     ExecuteResult result = ExecuteResult.BUFFERED;
-    if (batch.size() >= batchSize) {
+    if (buffer.size() >= maxBufferSize) {
       result = flushBufferedDocs();
     } else {
       // initial state
@@ -122,17 +115,17 @@ public class SolrBoltAction implements StreamingDataAction, TickTupleAware {
 
       // see if we've waited too long for more docs
       if (System.nanoTime() >= bufferTimeoutAtNanos)
-        result = flushBufferedDocs(); // took too long to see a full batch worth of docs, so send what we have ...
+        result = flushBufferedDocs(); // took too long to see a full buffer worth of docs, so send what we have ...
     }
 
     return result;
   }
 
   protected ExecuteResult flushBufferedDocs() {
-    int numDocsInBatch = batch.size();
+    int numDocsInBatch = buffer.size();
     Timer.Context timer = (sendBatchToSolr != null) ? sendBatchToSolr.time() : null;
     try {
-      sendBatchToSolr(batch);
+      sendBatchToSolr(buffer);
     } finally {
       if (timer != null)
         timer.stop();
@@ -153,12 +146,12 @@ public class SolrBoltAction implements StreamingDataAction, TickTupleAware {
     bufferTimeoutAtNanos = System.nanoTime() + TimeUnit.NANOSECONDS.convert(bufferTimeoutMs, TimeUnit.MILLISECONDS);
   }
 
-  public int getBatchSize() {
-    return batchSize;
+  public int getMaxBufferSize() {
+    return maxBufferSize;
   }
 
-  public void setBatchSize(int batchSize) {
-    this.batchSize = batchSize;
+  public void setMaxBufferSize(int maxBufferSize) {
+    this.maxBufferSize = maxBufferSize;
   }
 
   public String getCollection() {
@@ -177,67 +170,38 @@ public class SolrBoltAction implements StreamingDataAction, TickTupleAware {
     this.bufferTimeoutMs = bufferTimeoutMs;
   }
 
+  public SolrInputDocumentMapper getSolrInputDocumentMapper() {
+    return solrInputDocumentMapper;
+  }
+
+  public void setSolrInputDocumentMapper(SolrInputDocumentMapper solrInputDocumentMapper) {
+    this.solrInputDocumentMapper = solrInputDocumentMapper;
+  }
+
+  public SolrUpdateRequestStrategy getUpdateRequestStrategy() {
+    return updateRequestStrategy;
+  }
+
+  public void setUpdateRequestStrategy(SolrUpdateRequestStrategy updateRequestStrategy) {
+    this.updateRequestStrategy = updateRequestStrategy;
+  }
+
   public UpdateRequest createUpdateRequest(String collection) {
     UpdateRequest req = new UpdateRequest();
     req.setParam("collection", collection);
     return req;
   }
 
-  protected void sendBatchToSolr(Collection<SolrInputDocument> batch) {
-    UpdateRequest req = createUpdateRequest(collection);
-
+  protected void sendBatchToSolr(Collection<SolrInputDocument> buffer) {
     if (log.isDebugEnabled())
-      log.debug("Sending batch of " + batch.size() + " to collection " + collection);
+      log.debug("Sending buffer of " + buffer.size() + " to collection " + collection);
 
-    req.add(batch);
+    UpdateRequest req = createUpdateRequest(collection);
+    req.add(buffer);
     try {
-      cloudSolrClient.request(req);
-    } catch (Exception e) {
-      if (shouldRetry(e)) {
-        log.error("Send batch to collection " + collection + " failed due to " + e + "; will retry ...");
-        try {
-          Thread.sleep(5000);
-        } catch (InterruptedException ie) {
-          Thread.interrupted();
-        }
-
-        try {
-          cloudSolrClient.request(req);
-        } catch (Exception e1) {
-          log.error("Retry send batch to collection " + collection + " failed due to: " + e1, e1);
-
-          if (failedBatches != null)
-            failedBatches.inc();
-
-          if (e1 instanceof RuntimeException) {
-            throw (RuntimeException) e1;
-          } else {
-            throw new RuntimeException(e1);
-          }
-        } finally {
-          if (retriedBatches != null) {
-            retriedBatches.inc();
-          }
-        }
-      } else {
-        log.error("Send batch to collection " + collection + " failed due to: " + e, e);
-
-        if (failedBatches != null)
-          failedBatches.inc();
-
-        if (e instanceof RuntimeException) {
-          throw (RuntimeException) e;
-        } else {
-          throw new RuntimeException(e);
-        }
-      }
+      updateRequestStrategy.sendUpdateRequest(cloudSolrClient, collection, req);
     } finally {
-      batch.clear();
+      buffer.clear();
     }
-  }
-
-  protected boolean shouldRetry(Exception exc) {
-    Throwable rootCause = SolrException.getRootCause(exc);
-    return (rootCause instanceof ConnectException || rootCause instanceof SocketException);
   }
 }

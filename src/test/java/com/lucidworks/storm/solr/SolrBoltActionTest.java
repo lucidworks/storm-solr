@@ -59,9 +59,10 @@ public class SolrBoltActionTest extends TestSolrCloudClusterSupport {
   }
 
   protected void doBoltActionTest() throws Exception {
-    SolrBoltAction sba = new SolrBoltAction();
-    sba.batchSize = 1; // to avoid buffering docs
-    sba.cloudSolrClient = cloudSolrServer; // Spring @Autowired property in a real env
+    // Spring @Autowired property at runtime
+    SolrBoltAction sba = new SolrBoltAction(cloudSolrServer);
+    sba.setUpdateRequestStrategy(new DefaultUpdateRequestStrategy());
+    sba.setMaxBufferSize(1); // to avoid buffering docs
 
     // Mock the Storm tuple
     String docId = "1";

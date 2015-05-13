@@ -17,9 +17,17 @@ environments {
     spring.defaultCollection = "gettingstarted"
     spring.fieldGuessingEnabled = true
 
+    spring.maxBufferSize = 100
+    spring.bufferTimeoutMs = 500
+
     spring.fs.defaultFS = "hdfs://localhost:9000"
     spring.hdfsDirPath = "/user/timpotter/csv_files"
     spring.hdfsGlobFilter = "*.csv"
+
+    spring.fusionEndpoints = "http://localhost:8764"
+    spring.fusionUser = "admin"
+    spring.fusionPassword = "password123"
+    spring.fusionUpdatePath = "/api/apollo/index-pipelines/conn_solr/collections/twitterCollection/index"
   }
 
   staging {
@@ -28,6 +36,9 @@ environments {
     spring.zkHost = "zkhost:2181"
     spring.defaultCollection = "staging_collection"
     spring.fieldGuessingEnabled = false
+
+    spring.maxBufferSize = 100
+    spring.bufferTimeoutMs = 500
   }
 
   production {
@@ -36,5 +47,8 @@ environments {
     spring.zkHost = "zkhost1:2181,zkhost2:2181,zkhost3:2181"
     spring.defaultCollection = "prod_collection"
     spring.fieldGuessingEnabled = false
+
+    spring.maxBufferSize = 100
+    spring.bufferTimeoutMs = 500
   }
 }
