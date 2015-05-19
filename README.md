@@ -17,7 +17,7 @@ First, build the Jar for this project:
 
 This will generate the `target/storm-solr-1.0.jar` that contains the Storm JAR needed to deploy a topology.
 
-Twitter-to-Solr Example
+Packaging and Running a Storm Topology
 ========
 
 To begin, let’s understand how to run a topology in Storm. Effectively, there are two basic modes of running a Storm topology: local and cluster mode. Local mode is great for testing your topology locally before pushing it out to a remote Storm cluster, such as staging or production. For starters, you need to compile and package your code and all of its dependencies into a single JAR with an main class that runs your topology.
