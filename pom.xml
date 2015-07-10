@@ -12,6 +12,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <java.version>1.7</java.version>
     <storm.version>0.9.4</storm.version>
+    <solr.version>5.2.1</solr.version>
   </properties>
   <repositories>
     <repository>
@@ -74,6 +75,10 @@
                 <relocation>
                   <pattern>org.apache.http</pattern>
                   <shadedPattern>shaded.apache.http</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>org.apache.solr</pattern>
+                  <shadedPattern>shaded.apache.solr</shadedPattern>
                 </relocation>
                 <relocation>
                   <pattern>org.codehaus.jackson</pattern>
@@ -195,20 +200,20 @@
     <dependency>
       <groupId>org.apache.solr</groupId>
       <artifactId>solr-solrj</artifactId>
-      <version>5.1.0</version>
+      <version>${solr.version}</version>
       <type>jar</type>
     </dependency>
     <dependency>
       <groupId>org.apache.solr</groupId>
       <artifactId>solr-core</artifactId>
-      <version>5.1.0</version>
+      <version>${solr.version}</version>
       <type>jar</type>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.solr</groupId>
       <artifactId>solr-test-framework</artifactId>
-      <version>5.1.0</version>
+      <version>${solr.version}</version>
       <type>jar</type>
       <scope>test</scope>
     </dependency>
@@ -292,6 +297,11 @@
           <artifactId>slf4j-log4j12</artifactId>
         </exclusion>
       </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.htrace</groupId>
+      <artifactId>htrace-core</artifactId>
+      <version>3.2.0-incubating</version>
     </dependency>
   </dependencies>
 </project>

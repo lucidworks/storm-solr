@@ -27,7 +27,7 @@ class HdfsDirectoryToSolrTopology implements StormTopologyFactory {
     ShardGrouping shardGrouping = new ShardGrouping(app.getStormConfig(), collection);
     int numShards = shardGrouping.getNumShards();
 
-    // wire up the topology to read tweets and send to Solr
+    // wire up the topology to read from hdfs and send to Solr
     TopologyBuilder builder = new TopologyBuilder()
     builder.setSpout("hdfsSpout", hdfsSpout, app.parallelism("hdfsSpout"))
     builder.setBolt("csvParserBolt", csvParserBolt, app.parallelism("csvParserBolt")).shuffleGrouping("hdfsSpout")
