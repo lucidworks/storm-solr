@@ -308,7 +308,7 @@ The HdfsFileSystemProvider bean needs the Kerberos credentials (keytab and princ
   </bean>
 ```
 
-The SolrSecurity bean needs the full path of jaas-client.conf [check https://cwiki.apache.org/confluence/display/solr/Security]. By default, the file is not set and no authentication with will perform.
+The SolrSecurity bean needs the full path of jaas-client.conf [check https://cwiki.apache.org/confluence/display/solr/Security]. By default, the file is not set and no authentication will be perform.
 
 ```
   <bean id="solrSecurity" class="com.lucidworks.storm.utils.SolrSecurity" init-method="setConfigigurer">
@@ -318,6 +318,8 @@ The SolrSecurity bean needs the full path of jaas-client.conf [check https://cwi
 ```
 
 Environment-specific configuration example:
+
+All the properties for the kerberized environment are optional.
 
 ```
   production {
