@@ -30,9 +30,14 @@
         </property>
     </bean>
 
-    <bean id="cloudSolrClient" class="org.apache.solr.client.solrj.impl.CloudSolrClient">
+    <bean id="cloudSolrClient" class="shaded.apache.solr.client.solrj.impl.CloudSolrClient" depends-on="solrSecurity">
         <constructor-arg index="0" value="${zkHost}"/>
         <property name="defaultCollection" value="${defaultCollection}"/>
+    </bean>
+
+    <bean id="solrSecurity" class="com.lucidworks.storm.utils.SolrSecurity" init-method="setConfigigurer">
+      <property name="solrJaasFile" value="${solrJaasFile:}"/>
+      <property name="solrJaasAppName" value="${solrJaasAppName:}"/>
     </bean>
 
     <bean id="solrUpdateRequestStrategy" class="com.lucidworks.storm.solr.DefaultUpdateRequestStrategy">
@@ -57,7 +62,10 @@
   <bean id="hdfsFileSystemProvider" class="com.lucidworks.storm.example.hdfs.HdfsFileSystemProvider">
     <property name="hdfsConfig">
       <map>
-        <entry key="fs.defaultFS" value="${fs.defaultFS}"/>
+        <entry key="fs.defaultFS" value="${fs.defaultFS:}"/>
+        <entry key="hdfs.keytab.file" value="${hdfs.keytab.file:}"/>
+        <entry key="hdfs.kerberos.principal" value="${hdfs.kerberos.principal:}"/>
+        <entry key="hadoop.security.authentication" value="${hadoop.security.authentication:SIMPLE}"/>
       </map>
     </property>
   </bean>
@@ -89,8 +97,8 @@
 
     <bean id="hdfsDirectoryListingDataProvider"
           class="com.lucidworks.storm.example.hdfs.HdfsDirectoryListingDataProvider" scope="prototype">
-        <property name="dirPath" value="${hdfsDirPath}"/>
-        <property name="globFilter" value="${hdfsGlobFilter}"/>
+        <property name="dirPath" value="${hdfsDirPath:}"/>
+        <property name="globFilter" value="${hdfsGlobFilter:}"/>
     </bean>
 
     <bean id="csvParserBoltAction"
@@ -98,10 +106,10 @@
     </bean>
 
     <bean id="fusionBoltAction" class="com.lucidworks.storm.fusion.FusionBoltAction" scope="prototype">
-      <constructor-arg index="0" value="${fusionEndpoints}"/>
-      <constructor-arg index="1" value="${fusionUser}"/>
-      <constructor-arg index="2" value="${fusionPassword}"/>
-      <property name="updatePath" value="${fusionUpdatePath}"/>
+      <constructor-arg index="0" value="${fusionEndpoints:}"/>
+      <constructor-arg index="1" value="${fusionUser:}"/>
+      <constructor-arg index="2" value="${fusionPassword:}"/>
+      <property name="updatePath" value="${fusionUpdatePath:}"/>
       <property name="jsonContentStreamMapper" ref="jsonContentStreamMapper"/>
       <property name="updateRequestStrategy" ref="solrUpdateRequestStrategy"/>
     </bean>

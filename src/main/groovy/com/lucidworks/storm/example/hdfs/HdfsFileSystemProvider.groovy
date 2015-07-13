@@ -5,10 +5,13 @@ import org.apache.hadoop.fs.FileSystem
 import org.apache.hadoop.hdfs.DistributedFileSystem
 import org.apache.hadoop.security.SecurityUtil
 import org.apache.hadoop.security.UserGroupInformation
+import org.apache.log4j.Logger
 
 class HdfsFileSystemProvider {
 
   static String fsDefaultFS = "fs.defaultFS"
+
+  static Logger log = Logger.getLogger(HdfsFileSystemProvider)
 
   private Map<String,String> hdfsConfig
   private FileSystem hdfs
@@ -17,8 +20,11 @@ class HdfsFileSystemProvider {
     if (!hdfs) {
       Configuration hdfsConf = new Configuration()
       hdfsConfig.each{ hdfsConf.set(it.key, it.value) }
-      if (UserGroupInformation.isSecurityEnabled())
-        SecurityUtil.login(hdfsConf, "hdfs.keytab.file", "hdfs.kerberos.principal");
+      UserGroupInformation.setConfiguration(hdfsConf)
+      if (UserGroupInformation.isSecurityEnabled()) {
+        log.debug("Using a kerberized hdfs instance")
+        SecurityUtil.login(hdfsConf, "hdfs.keytab.file", "hdfs.kerberos.principal")
+      }
       hdfs = DistributedFileSystem.get(hdfsConf)
     }
     return hdfs

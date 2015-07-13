@@ -127,7 +127,7 @@ The `SolrBoltAction` bean also depends on an instance of the `CloudSolrClient` c
 by the Spring framework:
 
 ```
-  <bean id="cloudSolrClient" class="org.apache.solr.client.solrj.impl.CloudSolrClient">
+  <bean id="cloudSolrClient" class="shaded.apache.solr.client.solrj.impl.CloudSolrClient">
     <constructor-arg index="0" value="${zkHost}"/>
     <property name="defaultCollection" value="${defaultCollection}"/>
   </bean>
@@ -289,3 +289,58 @@ When using the default mapper, you must have dynamic fields enabled in your Solr
 As discussed above, the ${fieldGuessingEnabled} variable will be resolved from the Config.groovy configuration file at runtime.
 
 It should be clear, however, that you can inject your own SolrInputDocumentMapper implementation into the bolt bean using Spring if the default implementation does not meet your needs.
+
+Working on a kerberized environment
+-----------------------------------
+
+The HdfsFileSystemProvider bean needs the Kerberos credentials (keytab and principal), by default the authentication is set to SIMPLE.
+
+```
+  <bean id="hdfsFileSystemProvider" class="com.lucidworks.storm.example.hdfs.HdfsFileSystemProvider">
+    <property name="hdfsConfig">
+      <map>
+        <entry key="fs.defaultFS" value="${fs.defaultFS:}"/>
+        <entry key="hdfs.keytab.file" value="${hdfs.keytab.file:}"/>
+        <entry key="hdfs.kerberos.principal" value="${hdfs.kerberos.principal:}"/>
+        <entry key="hadoop.security.authentication" value="${hadoop.security.authentication:SIMPLE}"/>
+      </map>
+    </property>
+  </bean>
+```
+
+The SolrSecurity bean needs the full path of jaas-client.conf [check https://cwiki.apache.org/confluence/display/solr/Security]. By default, the file is not set and no authentication will be perform.
+
+```
+  <bean id="solrSecurity" class="com.lucidworks.storm.utils.SolrSecurity" init-method="setConfigigurer">
+     <property name="solrJaasFile" value="${solrJaasFile:}"/>
+     <property name="solrJaasAppName" value="${solrJaasAppName:}"/>
+  </bean>
+```
+
+Environment-specific configuration example:
+
+All the properties for the kerberized environment are optional.
+
+```
+  production {
+    env.name = "production"
+
+    spring.zkHost = "host1:2181,host2:2181,host3:2181/solr"
+    spring.defaultCollection = "storm-collection"
+    spring.fieldGuessingEnabled = false
+
+    spring.maxBufferSize = 100
+    spring.bufferTimeoutMs = 500
+
+    spring.fs.defaultFS = "hdfs://namenode:port"
+    spring.hdfsDirPath = "/path/to/dataset"
+    spring.hdfsGlobFilter = "*.csv"
+
+    spring.hdfs.keytab.file = "hdfs.keytab"
+    spring.hdfs.kerberos.principal = "storm"
+    spring.hadoop.security.authentication = "KERBEROS"
+
+    spring.solrJaasFile = "/path/to/jaas-client.conf"
+    spring.solrJaasAppName = "Client"
+  }
+```
