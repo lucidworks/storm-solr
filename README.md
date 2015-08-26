@@ -344,3 +344,24 @@ All the properties for the kerberized environment are optional.
     spring.solrJaasAppName = "Client"
   }
 ```
+
+Working with MaprFS
+-------------------
+
+First, build the jar with mapr 5 dependencies.
+
+```
+mvn clean package -Dmaven.test.skip=true -Dhadoop-version=mapr5
+```
+
+This will generate the `target/storm-solr-1.0-mapr5-SNAPSHOT.jar` that contains the Storm JAR needed to deploy a topology.
+
+
+
+In order to execute the `hdfs-to-solr` example, add the spring `fs.hdfs.impl` property to your Config.groovy file with the `com.mapr.fs.MapRFileSystem` value. Also, change the `fs.defaultFS` property to use the maprfs schema.
+
+```
+   spring.fs.defaultFS = "maprfs://cldbhost:port"
+   spring.fs.hdfs.impl = "com.mapr.fs.MapRFileSystem"
+
+```
