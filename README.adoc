@@ -18,7 +18,7 @@ Tools for building Storm topologies for indexing data into SolrCloud.
 
 == Getting Started
 
-== Build the Jar
+=== Build the Jar
 
 First, build the Jar for this project:
 
