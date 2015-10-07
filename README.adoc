@@ -18,6 +18,8 @@ Tools for building Storm topologies for indexing data into SolrCloud.
 
 == Getting Started
 
+== Build the Jar
+
 First, build the Jar for this project:
 
 `mvn clean package`
@@ -74,7 +76,7 @@ public interface StormTopologyFactory {
 
 First, build the jar with MapR 5 dependencies.
 
-[literal]
+[source]
 mvn clean package -Dmaven.test.skip=true -Dhadoop-version=mapr5
 
 This will generate the `target/storm-solr-1.0-mapr5-SNAPSHOT.jar` that contains the Storm JAR needed to deploy a topology.
@@ -127,7 +129,7 @@ Lastly, this class is written in Groovy instead of Java, which helps keep things
 
 We’ll get into the specific details of the implementation shortly, but first, let’s see how to run the TwitterToSolrTopology using the `StreamingApp` framework. For local mode, you would do:
 
-[literal]
+[source]
 ....
 java -classpath $STORM_HOME/lib/*:target/storm-solr-1.0.jar com.lucidworks.storm.StreamingApp \
    example.twitter.TwitterToSolrTopology -localRunSecs 90
@@ -137,7 +139,7 @@ The command above will run the TwitterToSolrTopology for 90 seconds on your loca
 
 To submit to a remote cluster, you would do:
 
-[literal]
+[source]
 ....
 $STORM_HOME/bin/storm jar target/storm-solr-1.0.jar com.lucidworks.storm.StreamingApp \
    example.twitter.TwitterToSolrTopology -env staging
@@ -298,7 +300,7 @@ When adapting the project to your own requirements, the easiest approach is to u
 
 However, you can also specify a different `Config.groovy` file by using the `-config` command-line option when deploying the topology, such as:
 
-[literal]
+[source]
 ....
 $STORM_HOME/bin/storm jar target/storm-solr-1.0.jar com.lucidworks.storm.StreamingApp \
    example.twitter.TwitterToSolrTopology -env staging -config MyConfig.groovy
