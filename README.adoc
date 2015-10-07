@@ -15,6 +15,7 @@ Tools for building Storm topologies for indexing data into SolrCloud.
 * Support for SolrCloud.
 
 // tag::storm-build[]
+
 == Getting Started
 
 First, build the Jar for this project:
