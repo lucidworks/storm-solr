@@ -14,11 +14,11 @@ Tools for building Storm topologies for indexing data into SolrCloud.
 * Send objects from a Storm topology into Solr.
 * Support for SolrCloud.
 
-// tag::storm-build[]
-
 == Getting Started
 
-=== Build the Jar
+// tag::storm-build[]
+
+== Build the Jar
 
 First, build the Jar for this project:
 
