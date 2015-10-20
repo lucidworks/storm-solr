@@ -17,7 +17,6 @@ Tools for building Storm topologies for indexing data into SolrCloud.
 == Getting Started
 
 // tag::storm-build[]
-
 == Build the Jar
 
 First, build the Jar for this project:
@@ -25,6 +24,30 @@ First, build the Jar for this project:
 `mvn clean package`
 
 This will generate the `target/storm-solr-1.0.jar` that contains the Storm JAR needed to deploy a topology.
+
+//end::storm-build[]
+// tag::mapr[]
+
+=== Working with MaprFS
+
+First, build the jar with MapR 5 dependencies.
+
+[source]
+mvn clean package -Dmaven.test.skip=true -Dhadoop-version=mapr5
+
+This will generate the `target/storm-solr-1.0-mapr5-SNAPSHOT.jar` that contains the Storm JAR needed to deploy a topology.
+
+In order to execute the `hdfs-to-solr` example, add the spring `fs.hdfs.impl` property to your `resources/Config.groovy` file with the `com.mapr.fs.MapRFileSystem` value. Also, change the `fs.defaultFS` property to use the maprfs schema.
+
+[source,groovy]
+----
+   spring.fs.defaultFS = "maprfs://cldbhost:port"
+   spring.fs.hdfs.impl = "com.mapr.fs.MapRFileSystem"
+
+----
+
+// end::mapr[]
+// tag::storm-packaging[]
 
 == Packaging and Running a Storm Topology
 
@@ -69,27 +92,7 @@ public interface StormTopologyFactory {
 }
 ----
 
-// end::storm-build[]
-
-// tag::mapr[]
-=== Working with MaprFS
-
-First, build the jar with MapR 5 dependencies.
-
-[source]
-mvn clean package -Dmaven.test.skip=true -Dhadoop-version=mapr5
-
-This will generate the `target/storm-solr-1.0-mapr5-SNAPSHOT.jar` that contains the Storm JAR needed to deploy a topology.
-
-In order to execute the `hdfs-to-solr` example, add the spring `fs.hdfs.impl` property to your `resources/Config.groovy` file with the `com.mapr.fs.MapRFileSystem` value. Also, change the `fs.defaultFS` property to use the maprfs schema.
-
-[source,groovy]
-----
-   spring.fs.defaultFS = "maprfs://cldbhost:port"
-   spring.fs.hdfs.impl = "com.mapr.fs.MapRFileSystem"
-
-----
-// end::mapr[]
+// end::storm-packaging[]
 
 // tag::topology[]
 == Developing a Storm Topology
