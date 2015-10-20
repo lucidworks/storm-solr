@@ -25,7 +25,7 @@ First, build the Jar for this project:
 
 This will generate the `target/storm-solr-1.0.jar` that contains the Storm JAR needed to deploy a topology.
 
-//end::storm-build[]
+// end::storm-build[]
 // tag::mapr[]
 
 === Working with MaprFS
@@ -93,8 +93,8 @@ public interface StormTopologyFactory {
 ----
 
 // end::storm-packaging[]
-
 // tag::topology[]
+
 == Developing a Storm Topology
 
 Let's look at an example that indexes tweets from Twitter into SolrCloud.
