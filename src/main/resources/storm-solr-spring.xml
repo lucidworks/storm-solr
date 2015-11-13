@@ -63,6 +63,8 @@
     <property name="hdfsConfig">
       <map>
         <entry key="fs.defaultFS" value="${fs.defaultFS:}"/>
+        <!-- use fs.hdfs.impl = com.mapr.fs.MapRFileSystem for maprfs-->
+        <entry key="fs.hdfs.impl" value="${fs.hdfs.impl:org.apache.hadoop.hdfs.DistributedFileSystem}"/>
         <entry key="hdfs.keytab.file" value="${hdfs.keytab.file:}"/>
         <entry key="hdfs.kerberos.principal" value="${hdfs.kerberos.principal:}"/>
         <entry key="hadoop.security.authentication" value="${hadoop.security.authentication:SIMPLE}"/>

@@ -2,7 +2,6 @@ package com.lucidworks.storm.example.hdfs
 
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.FileSystem
-import org.apache.hadoop.hdfs.DistributedFileSystem
 import org.apache.hadoop.security.SecurityUtil
 import org.apache.hadoop.security.UserGroupInformation
 import org.apache.log4j.Logger
@@ -25,7 +24,7 @@ class HdfsFileSystemProvider {
         log.debug("Using a kerberized hdfs instance")
         SecurityUtil.login(hdfsConf, "hdfs.keytab.file", "hdfs.kerberos.principal")
       }
-      hdfs = DistributedFileSystem.get(hdfsConf)
+      hdfs = FileSystem.get(hdfsConf)
     }
     return hdfs
   }
