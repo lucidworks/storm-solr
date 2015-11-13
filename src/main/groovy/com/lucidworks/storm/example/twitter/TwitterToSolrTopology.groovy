@@ -20,8 +20,6 @@ class TwitterToSolrTopology implements StormTopologyFactory {
     SpringSpout twitterSpout = new SpringSpout("twitterDataProvider", spoutFields);
     SpringBolt solrBolt = new SpringBolt("solrBoltAction", app.tickRate("solrBolt"));
 
-    SpringBolt solrJsonBolt = new SpringBolt("solrJsonBoltAction", app.tickRate("solrBolt"));
-
     // Route messages based on shard assignment in Solr (because we can)
     // and set the parallelism to the number of shards in the collection
     String collection = app.getStormConfig().get("spring.defaultCollection");
@@ -31,8 +29,7 @@ class TwitterToSolrTopology implements StormTopologyFactory {
     // wire up the topology to read tweets and send to Solr
     TopologyBuilder builder = new TopologyBuilder()
     builder.setSpout("twitterSpout", twitterSpout, app.parallelism("twitterSpout"))
-    //builder.setBolt("solrBolt", solrBolt, numShards).customGrouping("twitterSpout", shardGrouping)
-    builder.setBolt("solrJsonBolt", solrJsonBolt, numShards).customGrouping("twitterSpout", shardGrouping)
+    builder.setBolt("solrBolt", solrBolt, numShards).customGrouping("twitterSpout", shardGrouping)
 
     return builder.createTopology()
   }

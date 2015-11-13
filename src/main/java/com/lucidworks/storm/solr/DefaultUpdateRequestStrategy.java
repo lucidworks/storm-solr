@@ -21,6 +21,9 @@ public class DefaultUpdateRequestStrategy implements SolrUpdateRequestStrategy {
   public static Logger log = Logger.getLogger(DefaultUpdateRequestStrategy.class);
 
   @Metric
+  public Counter okRequests;
+
+  @Metric
   public Counter retriedRequests;
 
   @Metric
@@ -37,6 +40,9 @@ public class DefaultUpdateRequestStrategy implements SolrUpdateRequestStrategy {
     NamedList<Object> resp = null;
     try {
       resp = solrClient.request(req);
+      if (okRequests != null)
+        okRequests.inc();
+
     } catch (Exception e) {
       if (remainingRetryAttempts <= 0) {
         log.error("Send update request to "+collection+" failed due to " + e +

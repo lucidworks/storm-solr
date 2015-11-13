@@ -1,7 +1,5 @@
 package com.lucidworks.storm.solr;
 
-import com.codahale.metrics.Counter;
-import com.ryantenney.metrics.annotation.Metric;
 import org.apache.log4j.Logger;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
@@ -23,9 +21,6 @@ public class SolrJsonBoltAction extends SolrBoltAction {
 
   @Autowired
   public JsonContentStreamMapper jsonContentStreamMapper;
-
-  @Metric
-  public Counter failedUpdates;
 
   protected String updatePath = "/update/json/docs";
   protected String split;
