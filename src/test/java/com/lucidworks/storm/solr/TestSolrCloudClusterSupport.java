@@ -129,7 +129,7 @@ public abstract class TestSolrCloudClusterSupport {
         // ensure all replicas are "active"
         for (Replica replica : replicas) {
           String replicaState = replica.getStr(ZkStateReader.STATE_PROP);
-          if (!ZkStateReader.ACTIVE.equals(replicaState)) {
+          if (!"active".equals(replicaState)) {
             log.info("Replica " + replica.getName() + " for shard " + shardId + " is currently " + replicaState);
             allReplicasUp = false;
           }

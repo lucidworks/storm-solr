@@ -91,7 +91,6 @@
                 <value>$FQN:/**</value>
             </list>
         </property>
-        <property name="jsonContentStreamMapper" ref="jsonContentStreamMapper"/>
         <property name="updateRequestStrategy" ref="solrUpdateRequestStrategy"/>
     </bean>
 
