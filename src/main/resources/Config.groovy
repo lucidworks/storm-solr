@@ -27,6 +27,7 @@ environments {
     spring.fusionEndpoints = "http://localhost:8764"
     spring.fusionUser = "admin"
     spring.fusionPassword = "password123"
+    spring.fusionRealm = "native"
     spring.fusionUpdatePath = "/api/apollo/index-pipelines/conn_solr/collections/twitterCollection/index"
   }
 

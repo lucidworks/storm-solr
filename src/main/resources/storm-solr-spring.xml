@@ -110,9 +110,8 @@
       <constructor-arg index="0" value="${fusionEndpoints:}"/>
       <constructor-arg index="1" value="${fusionUser:}"/>
       <constructor-arg index="2" value="${fusionPassword:}"/>
-      <property name="updatePath" value="${fusionUpdatePath:}"/>
-      <property name="jsonContentStreamMapper" ref="jsonContentStreamMapper"/>
-      <property name="updateRequestStrategy" ref="solrUpdateRequestStrategy"/>
+      <constructor-arg index="3" value="${fusionRealm:}"/>
+      <constructor-arg index="4" value="${fusionUpdatePath:}"/>
     </bean>
 
 </beans>
