@@ -98,13 +98,13 @@ public class FusionPipelineClient {
     // build the HttpClient to be used for all requests
     HttpClientBuilder httpClientBuilder = HttpClientBuilder.create();
     httpClientBuilder.setDefaultRequestConfig(globalConfig).setDefaultCookieStore(cookieStore);
+    httpClientBuilder.setMaxConnPerRoute(100);
+    httpClientBuilder.setMaxConnTotal(500);
 
     if (fusionUser != null && fusionRealm == null)
       httpClientBuilder.addInterceptorFirst(new PreEmptiveBasicAuthenticator(fusionUser, fusionPass));
 
     httpClient = httpClientBuilder.build();
-    HttpClientUtil.setMaxConnections(httpClient, 500);
-    HttpClientUtil.setMaxConnectionsPerHost(httpClient, 100);
 
     originalEndpoints = Arrays.asList(endpointUrl.split(","));
     try {
