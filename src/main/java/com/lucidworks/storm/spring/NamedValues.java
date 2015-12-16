@@ -32,7 +32,7 @@ public class NamedValues implements Serializable {
   }
 
   public List<Object> values() {
-    return Arrays.asList(values);
+    return Arrays.asList(values.clone());
   }
 
   public void resetValues() {

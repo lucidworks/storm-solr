@@ -1,5 +1,6 @@
 package com.lucidworks.storm.spring;
 
+import java.io.Closeable;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
@@ -135,5 +136,17 @@ public class SpringBolt extends BaseRichBolt {
     if (tickRate > 0)
       conf.put(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, tickRate);
     return conf;
+  }
+
+  @Override
+  public void cleanup() {
+    StreamingDataAction sda = getStreamingDataActionBean();
+    if (sda instanceof Closeable) {
+      try {
+        ((Closeable) sda).close();
+      } catch (Exception ignore) {
+        log.warn("Error when trying to close StreamingDataAction due to: "+ignore);
+      }
+    }
   }
 }

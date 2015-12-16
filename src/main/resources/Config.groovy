@@ -4,6 +4,10 @@ environments {
   csvParserBolt.parallelism = 2
   solrBolt.tickRate = 5
 
+  eventsimSpout.parallelism = 1
+  collectionPerTimeFrameSolrBolt.parallelism = 2
+  collectionPerTimeFrameSolrBolt.tickRate = 5
+
   maxPendingMessages = -1
 
   test {
@@ -17,7 +21,7 @@ environments {
     spring.defaultCollection = "gettingstarted"
     spring.fieldGuessingEnabled = true
 
-    spring.maxBufferSize = 100
+    spring.maxBufferSize = 500
     spring.bufferTimeoutMs = 500
 
     spring.fs.defaultFS = "hdfs://localhost:9000"
@@ -29,6 +33,11 @@ environments {
     spring.fusionPassword = "password123"
     spring.fusionRealm = "native"
     spring.fusionUpdatePath = "/api/apollo/index-pipelines/conn_solr/collections/twitterCollection/index"
+
+    spring.eventsimFileToParse = "src/test/resources/eventsim-sample.json"
+    spring.eventsimNumShards = 2;
+    spring.eventsimReplicationFactor = 1;
+    spring.eventsimConfigName = "eventsim"
   }
 
   staging {

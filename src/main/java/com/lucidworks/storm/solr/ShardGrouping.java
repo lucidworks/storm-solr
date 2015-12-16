@@ -1,27 +1,36 @@
 package com.lucidworks.storm.solr;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import backtype.storm.generated.GlobalStreamId;
 import backtype.storm.grouping.CustomStreamGrouping;
 import backtype.storm.task.WorkerTopologyContext;
 import com.lucidworks.storm.StreamingApp;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.common.cloud.*;
+
+import org.apache.commons.math3.distribution.UniformIntegerDistribution;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.ImplicitDocRouter;
+import org.apache.solr.common.cloud.Slice;
 
 public class ShardGrouping implements CustomStreamGrouping, Serializable {
 
   private transient List<Integer> targetTasks;
-  private transient int numTasks;
   private transient CloudSolrClient cloudSolrClient;
   private transient DocCollection docCollection;
-  private transient DocRouter docRouter;
   private transient Map<String, Integer> shardIndexCache;
 
   protected Map stormConf;
   protected String collection;
   protected Integer numShards;
+  protected UniformIntegerDistribution random;
+  protected int tasksPerShard;
 
   public ShardGrouping(Map stormConf, String collection) {
     this.stormConf = stormConf;
@@ -41,8 +50,13 @@ public class ShardGrouping implements CustomStreamGrouping, Serializable {
 
   public void prepare(WorkerTopologyContext context, GlobalStreamId stream, List<Integer> targetTasks) {
     this.targetTasks = targetTasks;
-    this.numTasks = targetTasks.size();
-    initShardInfo(); // setup for doing shard to task mapping
+    int numTasks = targetTasks.size();
+    int numShards = initShardInfo(); // setup for doing shard to task mapping 
+    if (numTasks % numShards != 0)
+      throw new IllegalArgumentException("Number of tasks ("+numTasks+") should be a multiple of the number of shards ("+numShards+")!");
+
+    this.tasksPerShard = numTasks/numShards;
+    this.random = new UniformIntegerDistribution(0, tasksPerShard-1);
   }
 
   public List<Integer> chooseTasks(int taskId, List<Object> values) {
@@ -54,8 +68,10 @@ public class ShardGrouping implements CustomStreamGrouping, Serializable {
       return Collections.singletonList(targetTasks.get(0));
 
     Slice slice = docCollection.getRouter().getTargetSlice(docId, null, null, null, docCollection);
+
+    // map this doc into one of the tasks for that shard
     int shardIndex = shardIndexCache.get(slice.getName());
-    int selectedTask = shardIndex % numTasks;
+    int selectedTask = (tasksPerShard > 1) ? shardIndex + (random.sample() * tasksPerShard) : shardIndex;
     return Collections.singletonList(targetTasks.get(selectedTask));
   }
 
@@ -79,11 +95,7 @@ public class ShardGrouping implements CustomStreamGrouping, Serializable {
 
     shardIndexCache = new HashMap<String, Integer>(20);
     int s = 0;
-    for (Slice next : shards) {
-      shardIndexCache.put(next.getName(), s);
-      ++s;
-    }
-
+    for (Slice next : shards) shardIndexCache.put(next.getName(), s++);
     return shards.size();
   }
 }

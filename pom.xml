@@ -14,9 +14,10 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <java.version>1.8</java.version>
     <storm.version>0.9.4</storm.version>
-    <solr.version>5.2.1</solr.version>
+    <solr.version>5.3.1</solr.version>
     <hadoop.version>2.6.0</hadoop.version>
     <hadoop.version.mapr>2.7.0-mapr-1506</hadoop.version.mapr>
+    <jsonsimple.version>1.1.1</jsonsimple.version>
   </properties>
 
   <repositories>
@@ -92,6 +93,10 @@
                   <pattern>org.apache.solr</pattern>
                   <shadedPattern>shaded.apache.solr</shadedPattern>
                 </relocation>
+                  <relocation>
+                      <pattern>org.apache.curator</pattern>
+                      <shadedPattern>shaded.apache.curator</shadedPattern>
+                  </relocation>
                 <relocation>
                   <pattern>org.codehaus.jackson</pattern>
                   <shadedPattern>shaded.codehaus.jackson</shadedPattern>
@@ -321,11 +326,11 @@
       <artifactId>commons-cli</artifactId>
       <version>1.2</version>
     </dependency>
-    <dependency>
-      <groupId>commons-io</groupId>
-      <artifactId>commons-io</artifactId>
-      <version>2.3</version>
-    </dependency>
+      <dependency>
+          <groupId>commons-io</groupId>
+          <artifactId>commons-io</artifactId>
+          <version>2.4</version>
+      </dependency>
     <dependency>
       <groupId>org.apache.solr</groupId>
       <artifactId>solr-solrj</artifactId>
@@ -398,5 +403,30 @@
       <artifactId>htrace-core</artifactId>
       <version>3.2.0-incubating</version>
     </dependency>
+
+      <dependency>
+          <groupId>com.googlecode.json-simple</groupId>
+          <artifactId>json-simple</artifactId>
+          <version>${jsonsimple.version}</version>
+      </dependency>
+
+      <dependency>
+          <groupId>org.apache.curator</groupId>
+          <artifactId>curator-recipes</artifactId>
+          <version>2.9.1</version>
+      </dependency>
+
+      <dependency>
+          <groupId>org.apache.curator</groupId>
+          <artifactId>curator-client</artifactId>
+          <version>2.9.1</version>
+      </dependency>
+
+      <dependency>
+          <groupId>io.thekraken</groupId>
+          <artifactId>grok</artifactId>
+          <version>0.1.1</version>
+      </dependency>
+
   </dependencies>
 </project>

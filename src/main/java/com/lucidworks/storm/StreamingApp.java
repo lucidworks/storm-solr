@@ -284,6 +284,7 @@ public class StreamingApp {
       int localRunSecs = Integer.parseInt(cli.getOptionValue("localRunSecs", "30"));
       try {
         LocalCluster cluster = new LocalCluster();
+        stormConf.put("topology.tick.tuple.freq.secs", 5);
         cluster.submitTopology(topologyName, stormConf, topo.build(this));
 
         log.info("Submitted " + topologyName + " to LocalCluster at " + timestamp() + " ... sleeping for " +

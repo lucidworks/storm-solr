@@ -31,7 +31,7 @@ public abstract class TestSolrCloudClusterSupport {
   static final Logger log = Logger.getLogger(TestSolrCloudClusterSupport.class);
 
   protected static MiniSolrCloudCluster cluster;
-  protected static CloudSolrClient cloudSolrServer;
+  protected static CloudSolrClient cloudSolrClient;
   protected static File tempDir;
 
   @BeforeClass
@@ -47,16 +47,16 @@ public abstract class TestSolrCloudClusterSupport {
       throw exc;
     }
 
-    cloudSolrServer = new CloudSolrClient(cluster.getZkServer().getZkAddress(), true);
-    cloudSolrServer.connect();
+    cloudSolrClient = new CloudSolrClient(cluster.getZkServer().getZkAddress(), true);
+    cloudSolrClient.connect();
 
-    assertTrue(!cloudSolrServer.getZkStateReader().getClusterState().getLiveNodes().isEmpty());
+    assertTrue(!cloudSolrClient.getZkStateReader().getClusterState().getLiveNodes().isEmpty());
   }
 
   @AfterClass
   public static void stopCluster() throws Exception {
-    if (cloudSolrServer != null)
-      cloudSolrServer.shutdown();
+    if (cloudSolrClient != null)
+      cloudSolrClient.shutdown();
     if (cluster != null)
       cluster.shutdown();
 
@@ -74,7 +74,7 @@ public abstract class TestSolrCloudClusterSupport {
         confDir.getAbsolutePath() + "' not found!", confDir.isDirectory());
 
       // upload the test configs
-      SolrZkClient zkClient = cloudSolrServer.getZkStateReader().getZkClient();
+      SolrZkClient zkClient = cloudSolrClient.getZkStateReader().getZkClient();
       ZkConfigManager zkConfigManager =
         new ZkConfigManager(zkClient);
 
@@ -86,18 +86,24 @@ public abstract class TestSolrCloudClusterSupport {
     modParams.set("name", collectionName);
     modParams.set("numShards", numShards);
     modParams.set("replicationFactor", replicationFactor);
+
+
+    int liveNodes = cloudSolrClient.getZkStateReader().getClusterState().getLiveNodes().size();
+    int maxShardsPerNode = (int) Math.ceil(((double)numShards*replicationFactor)/liveNodes);
+
+    modParams.set("maxShardsPerNode", maxShardsPerNode);
     modParams.set("collection.configName", confName);
     QueryRequest request = new QueryRequest(modParams);
     request.setPath("/admin/collections");
-    cloudSolrServer.request(request);
+    cloudSolrClient.request(request);
     ensureAllReplicasAreActive(collectionName, numShards, replicationFactor, 20);
   }
 
   protected static void ensureAllReplicasAreActive(String testCollectionName, int shards, int rf, int maxWaitSecs) throws Exception {
     long startMs = System.currentTimeMillis();
 
-    ZkStateReader zkr = cloudSolrServer.getZkStateReader();
-    zkr.updateClusterState(true); // force the state to be fresh
+    ZkStateReader zkr = cloudSolrClient.getZkStateReader();
+    zkr.updateClusterState(); // force the state to be fresh
 
     ClusterState cs = zkr.getClusterState();
     Collection<Slice> slices = cs.getActiveSlices(testCollectionName);
@@ -110,10 +116,10 @@ public abstract class TestSolrCloudClusterSupport {
       // refresh state every 2 secs
       if (waitMs % 2000 == 0) {
         log.info("Updating ClusterState");
-        cloudSolrServer.getZkStateReader().updateClusterState(true);
+        cloudSolrClient.getZkStateReader().updateClusterState();
       }
 
-      cs = cloudSolrServer.getZkStateReader().getClusterState();
+      cs = cloudSolrClient.getZkStateReader().getClusterState();
       assertNotNull(cs);
       allReplicasUp = true; // assume true
       for (Slice shard : cs.getActiveSlices(testCollectionName)) {
@@ -154,9 +160,9 @@ public abstract class TestSolrCloudClusterSupport {
   }
 
   protected static String printClusterStateInfo(String collection) throws Exception {
-    cloudSolrServer.getZkStateReader().updateClusterState(true);
+    cloudSolrClient.getZkStateReader().updateClusterState();
     String cs = null;
-    ClusterState clusterState = cloudSolrServer.getZkStateReader().getClusterState();
+    ClusterState clusterState = cloudSolrClient.getZkStateReader().getClusterState();
     if (collection != null) {
       cs = clusterState.getCollection(collection).toString();
     } else {

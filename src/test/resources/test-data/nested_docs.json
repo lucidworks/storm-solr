@@ -1,0 +1,73 @@
+[
+  {
+    "a0":0.1,
+    "a1":"a1-val",
+    "a2":200,
+    "a3":[ "a3a", "a3b", "a3c"],
+    "a4":{
+      "a40":"a40-val",
+      "a41":41,
+      "a42":["a42x","a42y","a42z"],
+      "a43":[
+        {
+          "a430":"a430-val",
+          "a430a":[
+            ["a430a00","a430a01","a430a02"],
+            ["a430a10","a430a11"]
+          ]
+        },{
+          "a431":"a431-val",
+          "a431a": {
+            "a431aX":"X",
+            "a431aY":"Y"
+          }
+        },{
+          "a432":"a432-val"
+        }
+      ]
+    }
+  }, {
+    "name": "Example",
+    "phone": 3035551234,
+    "orgs" :[
+      {
+        "name" : "Microsoft",
+        "city": "Seattle",
+        "zip": 98052
+      }, {
+        "name": "Apple",
+        "city":"Cupertino",
+        "zip":"95014"
+      }
+    ]
+  }, {
+    "_index": "test_index_2015.12.08.08",
+    "_type": "test_doc",
+    "_id": "id1234567890",
+    "_version": 1,
+    "found": true,
+    "enrichment": {
+      "host": {
+        "ip_dst_addr": {},
+        "ip_src_addr": {
+          "known_info": {
+            "asset_value": "important",
+            "type": "localhost",
+            "local": "YES"
+          }
+        }
+      }
+    },
+    "message": {
+      "frag_offset": 0,
+      "ip_dst_addr": "10.10.0.16",
+      "ip_src_port": 63768,
+      "ip_dst_port": 61756,
+      "ts_micro": 1449606126103727,
+      "ip_id": 64545,
+      "ip_src_addr": "10.10.0.24",
+      "ip_protocol": 17,
+      "timestamp": 1449606126103
+    }
+  }
+]

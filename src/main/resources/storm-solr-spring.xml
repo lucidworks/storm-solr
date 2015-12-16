@@ -1,117 +1,165 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
-       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xmlns:context="http://www.springframework.org/schema/context"
-       xmlns:metrics="http://www.ryantenney.com/schema/metrics"
-       xsi:schemaLocation="http://www.springframework.org/schema/beans
-           http://www.springframework.org/schema/beans/spring-beans.xsd
-           http://www.springframework.org/schema/context
-           http://www.springframework.org/schema/context/spring-context.xsd
-           http://www.ryantenney.com/schema/metrics
-           http://www.ryantenney.com/schema/metrics/metrics-3.0.xsd">
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xmlns:context="http://www.springframework.org/schema/context"
+     xmlns:metrics="http://www.ryantenney.com/schema/metrics"
+     xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/context
+       http://www.springframework.org/schema/context/spring-context.xsd
+       http://www.ryantenney.com/schema/metrics
+       http://www.ryantenney.com/schema/metrics/metrics-3.0.xsd">
 
-    <context:annotation-config/>
-    <context:property-placeholder location="classpath:storm-solr.properties"/>
-    <context:component-scan base-package="org.lucidworks.storm"/>
+  <context:annotation-config/>
+  <context:property-placeholder location="classpath:storm-solr.properties"/>
+  <context:component-scan base-package="org.lucidworks.storm"/>
 
-    <!-- Metrics support, sends periodic reports to the logger -->
-    <metrics:metric-registry id="metrics"/>
-    <metrics:annotation-driven metric-registry="metrics"/>
-    <metrics:reporter type="slf4j" metric-registry="metrics" period="1m"/>
+  <!-- Metrics support, sends periodic reports to the logger -->
+  <metrics:metric-registry id="metrics"/>
+  <metrics:annotation-driven metric-registry="metrics"/>
+  <metrics:reporter type="slf4j" metric-registry="metrics" period="1m"/>
 
-    <bean id="twitterDataProvider" class="com.lucidworks.storm.example.twitter.TwitterDataProvider">
-        <property name="keywords">
-            <list>
-                <value>solr</value>
-                <value>lucene</value>
-                <value>spark</value>
-                <value>hadoop</value>
-                <value>storm</value>
-            </list>
-        </property>
-    </bean>
-
-    <bean id="cloudSolrClient" class="shaded.apache.solr.client.solrj.impl.CloudSolrClient" depends-on="solrSecurity">
-        <constructor-arg index="0" value="${zkHost}"/>
-        <property name="defaultCollection" value="${defaultCollection}"/>
-    </bean>
-
-    <bean id="solrSecurity" class="com.lucidworks.storm.utils.SolrSecurity" init-method="setConfigigurer">
-      <property name="solrJaasFile" value="${solrJaasFile:}"/>
-      <property name="solrJaasAppName" value="${solrJaasAppName:}"/>
-    </bean>
-
-    <bean id="solrUpdateRequestStrategy" class="com.lucidworks.storm.solr.DefaultUpdateRequestStrategy">
-      <property name="waitSecsBetweenRetries" value="5"/>
-      <property name="maxRetryAttempts" value="2"/>
-    </bean>
-
-    <!-- You can plug-in a different mapping impl by changing the class of this bean -->
-    <bean id="solrInputDocumentMapper" class="com.lucidworks.storm.solr.DefaultSolrInputDocumentMapper">
-        <property name="idFieldName" value="id"/>
-        <property name="fieldGuessingEnabled" value="${fieldGuessingEnabled}"/>
-    </bean>
-
-    <!--
-    Bean that uses com.fasterxml.jackson.databind.ObjectMapper to bind Java objects to JSON.
-    Change this reference if you need to customize how messages are transformed into JSON when using the
-    solrJsonBoltAction or fusionBoltAction in your topology.
-     -->
-    <bean id="jsonContentStreamMapper" class="com.lucidworks.storm.solr.DefaultJsonContentStreamMapper">
-    </bean>
-
-  <bean id="hdfsFileSystemProvider" class="com.lucidworks.storm.example.hdfs.HdfsFileSystemProvider">
-    <property name="hdfsConfig">
-      <map>
-        <entry key="fs.defaultFS" value="${fs.defaultFS:}"/>
-        <!-- use fs.hdfs.impl = com.mapr.fs.MapRFileSystem for maprfs-->
-        <entry key="fs.hdfs.impl" value="${fs.hdfs.impl:org.apache.hadoop.hdfs.DistributedFileSystem}"/>
-        <entry key="hdfs.keytab.file" value="${hdfs.keytab.file:}"/>
-        <entry key="hdfs.kerberos.principal" value="${hdfs.kerberos.principal:}"/>
-        <entry key="hadoop.security.authentication" value="${hadoop.security.authentication:SIMPLE}"/>
-      </map>
+  <bean id="twitterDataProvider" class="com.lucidworks.storm.example.twitter.TwitterDataProvider">
+    <property name="keywords">
+      <list>
+        <value>solr</value>
+        <value>lucene</value>
+        <value>spark</value>
+        <value>hadoop</value>
+        <value>storm</value>
+      </list>
     </property>
   </bean>
 
-    <!--
-    Bolt "action" beans must be created with prototype scope if declared with parallelism > 1
-    to avoid thread-safety issues
-     -->
-    <bean id="solrBoltAction" class="com.lucidworks.storm.solr.SolrBoltAction" scope="prototype">
-        <property name="solrInputDocumentMapper" ref="solrInputDocumentMapper"/>
-        <property name="maxBufferSize" value="${maxBufferSize}"/>
-        <property name="bufferTimeoutMs" value="${bufferTimeoutMs}"/>
-        <property name="updateRequestStrategy" ref="solrUpdateRequestStrategy"/>
-    </bean>
+  <bean id="cloudSolrClient" class="shaded.apache.solr.client.solrj.impl.CloudSolrClient" depends-on="solrSecurity">
+    <constructor-arg index="0" value="${zkHost}"/>
+    <property name="defaultCollection" value="${defaultCollection}"/>
+  </bean>
 
-    <bean id="solrJsonBoltAction" class="com.lucidworks.storm.solr.SolrJsonBoltAction" scope="prototype">
-        <!-- see http://lucidworks.com/blog/indexing-custom-json-data/ -->
-        <property name="split" value="/"/>
-        <property name="fieldMappings">
-            <list>
-                <value>color_s:/user/profileTextColor</value>
-                <value>retweetcolor_s:/retweetedStatus/user/profileTextColor</value>
-                <value>$FQN:/**</value>
-            </list>
-        </property>
-        <property name="updateRequestStrategy" ref="solrUpdateRequestStrategy"/>
-    </bean>
+  <bean id="solrSecurity" class="com.lucidworks.storm.utils.SolrSecurity" init-method="setConfigigurer">
+    <property name="solrJaasFile" value="${solrJaasFile:}"/>
+    <property name="solrJaasAppName" value="${solrJaasAppName:}"/>
+  </bean>
 
-    <bean id="hdfsDirectoryListingDataProvider"
-          class="com.lucidworks.storm.example.hdfs.HdfsDirectoryListingDataProvider" scope="prototype">
-        <property name="dirPath" value="${hdfsDirPath:}"/>
-        <property name="globFilter" value="${hdfsGlobFilter:}"/>
-    </bean>
+  <bean id="solrUpdateRequestStrategy" class="com.lucidworks.storm.solr.DefaultUpdateRequestStrategy" scope="singleton">
+    <property name="waitSecsBetweenRetries" value="5"/>
+    <property name="maxRetryAttempts" value="2"/>
+  </bean>
 
-    <bean id="csvParserBoltAction"
-          class="com.lucidworks.storm.example.hdfs.CsvParserBoltAction" scope="prototype">
-    </bean>
+  <!-- You can plug-in a different mapping impl by changing the class of this bean -->
+  <bean id="solrInputDocumentMapper" class="com.lucidworks.storm.solr.DefaultSolrInputDocumentMapper">
+    <property name="idFieldName" value="id"/>
+    <property name="fieldGuessingEnabled" value="${fieldGuessingEnabled}"/>
+  </bean>
 
-    <bean id="fusionBoltAction" class="com.lucidworks.storm.fusion.FusionBoltAction" scope="prototype">
-      <constructor-arg index="0" value="${fusionEndpoints:}"/>
-      <constructor-arg index="1" value="${fusionUser:}"/>
-      <constructor-arg index="2" value="${fusionPassword:}"/>
-      <constructor-arg index="3" value="${fusionRealm:}"/>
-      <constructor-arg index="4" value="${fusionUpdatePath:}"/>
-    </bean>
+  <!--
+  Bean that uses com.fasterxml.jackson.databind.ObjectMapper to bind Java objects to JSON.
+  Change this reference if you need to customize how messages are transformed into JSON when using the
+  solrJsonBoltAction or fusionBoltAction in your topology.
+   -->
+  <bean id="jsonContentStreamMapper" class="com.lucidworks.storm.solr.DefaultJsonContentStreamMapper">
+  </bean>
+
+  <bean id="hdfsFileSystemProvider" class="com.lucidworks.storm.example.hdfs.HdfsFileSystemProvider">
+  <property name="hdfsConfig">
+    <map>
+    <entry key="fs.defaultFS" value="${fs.defaultFS:}"/>
+    <!-- use fs.hdfs.impl = com.mapr.fs.MapRFileSystem for maprfs-->
+    <entry key="fs.hdfs.impl" value="${fs.hdfs.impl:org.apache.hadoop.hdfs.DistributedFileSystem}"/>
+    <entry key="hdfs.keytab.file" value="${hdfs.keytab.file:}"/>
+    <entry key="hdfs.kerberos.principal" value="${hdfs.kerberos.principal:}"/>
+    <entry key="hadoop.security.authentication" value="${hadoop.security.authentication:SIMPLE}"/>
+    </map>
+  </property>
+  </bean>
+
+  <!--
+  Bolt "action" beans must be created with prototype scope if declared with parallelism > 1
+  to avoid thread-safety issues
+   -->
+  <bean id="solrBoltAction" class="com.lucidworks.storm.solr.SolrBoltAction" scope="prototype">
+    <property name="solrInputDocumentMapper" ref="solrInputDocumentMapper"/>
+    <property name="maxBufferSize" value="${maxBufferSize}"/>
+    <property name="bufferTimeoutMs" value="${bufferTimeoutMs}"/>
+    <property name="updateRequestStrategy" ref="solrUpdateRequestStrategy"/>
+    <property name="documentAssignmentStrategy">
+      <bean class="com.lucidworks.storm.solr.DefaultDocumentAssignmentStrategy">
+        <property name="collection" value="${defaultCollection}"/>
+      </bean>
+    </property>
+  </bean>
+
+  <bean id="solrJsonBoltAction" class="com.lucidworks.storm.solr.SolrJsonBoltAction" scope="prototype">
+    <!-- see http://lucidworks.com/blog/indexing-custom-json-data/ -->
+    <property name="split" value="/"/>
+    <property name="fieldMappings">
+      <list>
+        <value>color_s:/user/profileTextColor</value>
+        <value>retweetcolor_s:/retweetedStatus/user/profileTextColor</value>
+        <value>$FQN:/**</value>
+      </list>
+    </property>
+    <property name="updateRequestStrategy" ref="solrUpdateRequestStrategy"/>
+    <property name="documentAssignmentStrategy">
+      <bean class="com.lucidworks.storm.solr.DefaultDocumentAssignmentStrategy">
+        <property name="collection" value="${defaultCollection}"/>
+      </bean>
+    </property>
+  </bean>
+
+  <bean id="hdfsDirectoryListingDataProvider"
+      class="com.lucidworks.storm.example.hdfs.HdfsDirectoryListingDataProvider" scope="prototype">
+    <property name="dirPath" value="${hdfsDirPath:}"/>
+    <property name="globFilter" value="${hdfsGlobFilter:}"/>
+  </bean>
+
+  <bean id="csvParserBoltAction"
+      class="com.lucidworks.storm.example.hdfs.CsvParserBoltAction" scope="prototype">
+  </bean>
+
+  <bean id="fusionBoltAction" class="com.lucidworks.storm.fusion.FusionBoltAction" scope="prototype">
+    <constructor-arg index="0" value="${fusionEndpoints:}"/>
+    <constructor-arg index="1" value="${fusionUser:}"/>
+    <constructor-arg index="2" value="${fusionPassword:}"/>
+    <constructor-arg index="3" value="${fusionRealm:}"/>
+    <constructor-arg index="4" value="${fusionUpdatePath:}"/>
+  </bean>
+
+
+  <!--
+  Collection-per-time-frame example based on the eventsim data, see:
+  https://github.com/Interana/eventsim
+  -->
+
+  <bean id="eventsimSpout" class="com.lucidworks.storm.io.FileTailingDataProvider" scope="prototype">
+    <constructor-arg index="0" value="${eventsimFileToParse:}"/>
+    <property name="lineParser">
+      <bean class="com.lucidworks.storm.io.parsers.JsonLogLineParser"/>
+    </property>
+  </bean>
+
+  <bean id="collectionPerTimeFrameAssignmentStrategy" class="com.lucidworks.storm.solr.CollectionPerTimeFrameAssignmentStrategy" scope="singleton">
+    <property name="timeUnit" value="HOURS"/>
+    <property name="timeFrame" value="12"/>
+    <property name="timezoneId" value="UTC"/>
+    <property name="dateTimePattern" value="yy-MM-dd_HH"/>
+    <property name="fieldName" value="ts"/>
+    <property name="collectionNameBase" value="eventsim_"/>
+    <property name="alias" value="eventsim-recent"/>
+    <property name="maxCollectionsInAlias" value="5"/>
+    <property name="numShards" value="${eventsimNumShards}"/>
+    <property name="replicationFactor" value="${eventsimReplicationFactor}"/>
+    <property name="configName" value="${eventsimConfigName}"/>
+  </bean>
+
+  <!-- Solr bolt that uses a collection-per-time-frame assignment strategy -->
+  <bean id="collectionPerTimeFrameSolrBoltAction" class="com.lucidworks.storm.solr.SolrBoltAction" scope="prototype">
+    <property name="solrInputDocumentMapper">
+      <bean class="com.lucidworks.storm.solr.JsonDocumentMapper"/>
+    </property>
+    <property name="maxBufferSize" value="${maxBufferSize}"/>
+    <property name="bufferTimeoutMs" value="${bufferTimeoutMs}"/>
+    <property name="updateRequestStrategy" ref="solrUpdateRequestStrategy"/>
+    <property name="documentAssignmentStrategy" ref="collectionPerTimeFrameAssignmentStrategy"/>
+  </bean>
 
 </beans>

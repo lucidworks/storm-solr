@@ -65,6 +65,8 @@ public class SolrJsonBoltAction extends SolrBoltAction {
     }
     req.addContentStream(contentStream);
 
+    // ugh - hacky, but this class needs to be re-worked anyway
+    String collection = ((DefaultDocumentAssignmentStrategy)documentAssignmentStrategy).getCollection();
     updateRequestStrategy.sendUpdateRequest(cloudSolrClient, collection, req);
 
     if (indexedCounter != null)

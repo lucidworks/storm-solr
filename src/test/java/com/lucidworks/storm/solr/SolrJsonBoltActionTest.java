@@ -22,8 +22,9 @@ public class SolrJsonBoltActionTest extends SolrBoltActionTest {
 
   @Override
   protected void doBoltActionTest() throws Exception {
-    SolrJsonBoltAction sba = new SolrJsonBoltAction(cloudSolrServer);
+    SolrJsonBoltAction sba = new SolrJsonBoltAction(cloudSolrClient);
     sba.setUpdateRequestStrategy(new DefaultUpdateRequestStrategy());
+    sba.setDocumentAssignmentStrategy(new DefaultDocumentAssignmentStrategy());
     sba.setMaxBufferSize(1); // to avoid buffering docs
 
     // Mock the Storm tuple
@@ -41,17 +42,17 @@ public class SolrJsonBoltActionTest extends SolrBoltActionTest {
     when(mockTuple.getValue(1)).thenReturn(testDoc);
     SpringBolt.ExecuteResult result = sba.execute(mockTuple, null);
     assertTrue(result == SpringBolt.ExecuteResult.ACK);
-    cloudSolrServer.commit();
+    cloudSolrClient.commit();
 
     // verify the object to Solr mapping worked correctly using reflection and dynamic fields
     SolrQuery query = new SolrQuery("id:" + docId);
-    QueryResponse qr = cloudSolrServer.query(query);
+    QueryResponse qr = cloudSolrClient.query(query);
     SolrDocumentList results = qr.getResults();
     assertTrue(results.getNumFound() == 1);
     SolrDocument doc = results.get(0);
     assertNotNull(doc);
     assertEquals("foo", doc.getFirstValue("text"));
-    assertEquals("10", doc.getFirstValue("number"));
+    assertEquals("10", String.valueOf(doc.getFirstValue("number")));
 
     // gen a big JSON object now ... one that gets streamed out to Solr
     String[] vocab = new String[]{
@@ -72,10 +73,10 @@ public class SolrJsonBoltActionTest extends SolrBoltActionTest {
     when(mockTuple.getValue(1)).thenReturn(root);
     result = sba.execute(mockTuple, null);
     assertTrue(result == SpringBolt.ExecuteResult.ACK);
-    cloudSolrServer.commit();
+    cloudSolrClient.commit();
 
     query = new SolrQuery("id:" + docId);
-    qr = cloudSolrServer.query(query);
+    qr = cloudSolrClient.query(query);
     results = qr.getResults();
     assertTrue(results.getNumFound() == 1);
     assertNotNull(results.get(0));
