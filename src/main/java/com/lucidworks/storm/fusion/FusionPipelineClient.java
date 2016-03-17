@@ -1,6 +1,7 @@
 package com.lucidworks.storm.fusion;
 
-import com.codahale.metrics.*;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.MetricRegistry;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpException;
 import org.apache.http.HttpRequest;
@@ -29,15 +30,30 @@ import org.apache.http.client.protocol.HttpClientContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.net.MalformedURLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.impl.Krb5HttpClientConfigurer;
+
 public class FusionPipelineClient {
+
+  public static final String LWWW_JAAS_FILE = "lww.jaas.file";
+  public static final String LWWW_JAAS_APPNAME = "lww.jaas.appname";
 
   public static Logger log = LoggerFactory.getLogger(FusionPipelineClient.class);
 
@@ -73,6 +89,7 @@ public class FusionPipelineClient {
   String fusionRealm = null;
   AtomicInteger requestCounter = null;
   Map<String,Meter> metersByHost = new HashMap<>();
+  boolean isKerberos = false;
 
   public static MetricRegistry metrics = null;
 
@@ -84,24 +101,36 @@ public class FusionPipelineClient {
 
   public FusionPipelineClient(String endpointUrl, String fusionUser, String fusionPass, String fusionRealm) throws MalformedURLException {
 
-    globalConfig = RequestConfig.custom().setCookieSpec(CookieSpecs.BEST_MATCH).build();
-    cookieStore = new BasicCookieStore();
+    String lwwJaasFile = System.getProperty(LWWW_JAAS_FILE);
+    if (lwwJaasFile != null && !lwwJaasFile.isEmpty()) {
+      System.setProperty("sun.security.krb5.debug", "true");
+      System.setProperty("java.security.auth.login.config", lwwJaasFile);
+      System.setProperty("solr.kerberos.jaas.appname", System.getProperty(LWWW_JAAS_APPNAME, "Client"));
+      HttpClientUtil.setConfigurer(new Krb5HttpClientConfigurer());
+      httpClient = HttpClientUtil.createClient(null);
+      HttpClientUtil.setMaxConnections(httpClient, 500);
+      HttpClientUtil.setMaxConnectionsPerHost(httpClient, 100);
+      isKerberos = true;
+    } else {
+      globalConfig = RequestConfig.custom().setCookieSpec(CookieSpecs.BEST_MATCH).build();
+      cookieStore = new BasicCookieStore();
 
-    this.fusionUser = fusionUser;
-    this.fusionPass = fusionPass.getBytes(StandardCharsets.UTF_8);
-    this.fusionRealm = fusionRealm;
+      this.fusionUser = fusionUser;
+      this.fusionPass = fusionPass.getBytes(StandardCharsets.UTF_8);
+      this.fusionRealm = fusionRealm;
 
-    // build the HttpClient to be used for all requests
-    HttpClientBuilder httpClientBuilder = HttpClientBuilder.create();
-    httpClientBuilder.setDefaultRequestConfig(globalConfig).setDefaultCookieStore(cookieStore);
-    httpClientBuilder.setMaxConnPerRoute(100);
-    httpClientBuilder.setMaxConnTotal(500);
-    httpClientBuilder.setSSLHostnameVerifier(new NoopHostnameVerifier());
+      // build the HttpClient to be used for all requests
+      HttpClientBuilder httpClientBuilder = HttpClientBuilder.create();
+      httpClientBuilder.setDefaultRequestConfig(globalConfig).setDefaultCookieStore(cookieStore);
+      httpClientBuilder.setMaxConnPerRoute(100);
+      httpClientBuilder.setMaxConnTotal(500);
+      httpClientBuilder.setSSLHostnameVerifier(new NoopHostnameVerifier());
 
-    if (fusionUser != null && fusionRealm == null)
-      httpClientBuilder.addInterceptorFirst(new PreEmptiveBasicAuthenticator(fusionUser, fusionPass));
+      if (fusionUser != null && fusionRealm == null)
+        httpClientBuilder.addInterceptorFirst(new PreEmptiveBasicAuthenticator(fusionUser, fusionPass));
 
-    httpClient = httpClientBuilder.build();
+      httpClient = httpClientBuilder.build();
+    }
 
     originalEndpoints = Arrays.asList(endpointUrl.split(","));
     try {
@@ -166,7 +195,7 @@ public class FusionPipelineClient {
 
     FusionSession fusionSession = new FusionSession();
 
-    if (fusionRealm != null) {
+    if (!isKerberos && fusionRealm != null) {
       int at = url.indexOf("/api");
       String proxyUrl = url.substring(0, at);
       String sessionApi = proxyUrl + "/api/session?realmName=" + fusionRealm;
@@ -443,10 +472,18 @@ public class FusionPipelineClient {
       et.setContentEncoding(StandardCharsets.UTF_8.name());
       postRequest.setEntity(et); // new BufferedHttpEntity(et));
 
-      HttpClientContext context = HttpClientContext.create();
-      context.setCookieStore(cookieStore);
+      HttpResponse response = null;
+      HttpClientContext context = null;
+      if (isKerberos) {
+        response = httpClient.execute(postRequest);
+      } else {
+        context = HttpClientContext.create();
+        if (cookieStore != null) {
+          context.setCookieStore(cookieStore);
+        }
+        response = httpClient.execute(postRequest, context);
+      }
 
-      HttpResponse response = httpClient.execute(postRequest, context);
       entity = response.getEntity();
       int statusCode = response.getStatusLine().getStatusCode();
       if (statusCode == 401) {
@@ -471,7 +508,11 @@ public class FusionPipelineClient {
         }
 
         log.info("Going to re-try request "+requestId+" after session re-established with "+endpoint);
-        response = httpClient.execute(postRequest, context);
+        if (isKerberos) {
+          response = httpClient.execute(postRequest);
+        } else {
+          response = httpClient.execute(postRequest, context);
+        }
         entity = response.getEntity();
         statusCode = response.getStatusLine().getStatusCode();
         if (statusCode == 200 || statusCode == 204) {
