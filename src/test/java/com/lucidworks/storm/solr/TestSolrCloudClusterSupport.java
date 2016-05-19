@@ -1,27 +1,38 @@
 package com.lucidworks.storm.solr;
 
-import java.io.File;
-import java.util.*;
-
 import org.apache.log4j.Logger;
-
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
-import org.apache.solr.common.cloud.*;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkConfigManager;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.junit.BeforeClass;
 import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import org.apache.commons.io.FileUtils;
 
 /**
  * Supports tests that need a SolrCloud cluster.
@@ -32,16 +43,16 @@ public abstract class TestSolrCloudClusterSupport {
 
   protected static MiniSolrCloudCluster cluster;
   protected static CloudSolrClient cloudSolrClient;
-  protected static File tempDir;
+  protected static Path tempDir;
 
   @BeforeClass
   public static void startCluster() throws Exception {
     File solrXml = new File("src/test/resources/solr.xml");
 
-    tempDir = FileUtils.getTempDirectory();
+    tempDir = Files.createTempDirectory("MiniSolrCloudCluster");
 
     try {
-      cluster = new MiniSolrCloudCluster(1, null, tempDir, solrXml, null, null);
+      cluster = new MiniSolrCloudCluster(1, null, tempDir, MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML, null, null);
     } catch (Exception exc) {
       log.error("Failed to initialize a MiniSolrCloudCluster due to: " + exc, exc);
       throw exc;
@@ -55,28 +66,45 @@ public abstract class TestSolrCloudClusterSupport {
 
   @AfterClass
   public static void stopCluster() throws Exception {
-    if (cloudSolrClient != null)
+    if (cloudSolrClient != null) {
       cloudSolrClient.shutdown();
-    if (cluster != null)
+    }
+    if (cluster != null) {
       cluster.shutdown();
+    }
 
-    if (tempDir.isDirectory())
-      FileUtils.deleteDirectory(tempDir);
+    // Delete tempDir content
+    Files.walkFileTree(tempDir, new SimpleFileVisitor<Path>() {
+      @Override
+      public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+        Files.delete(file);
+        return FileVisitResult.CONTINUE;
+      }
+
+      @Override
+      public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+        Files.delete(dir);
+        return FileVisitResult.CONTINUE;
+      }
+
+    });
   }
 
-  protected static void createCollection(String collectionName, int numShards, int replicationFactor, String confName) throws Exception {
+  protected static void createCollection(String collectionName, int numShards, int replicationFactor, String
+      confName) throws Exception {
     createCollection(collectionName, numShards, replicationFactor, confName, null);
   }
 
-  protected static void createCollection(String collectionName, int numShards, int replicationFactor, String confName, File confDir) throws Exception {
+  protected static void createCollection(String collectionName, int numShards, int replicationFactor, String
+      confName, File confDir) throws Exception {
     if (confDir != null) {
       assertTrue("Specified Solr config directory '" +
-        confDir.getAbsolutePath() + "' not found!", confDir.isDirectory());
+          confDir.getAbsolutePath() + "' not found!", confDir.isDirectory());
 
       // upload the test configs
       SolrZkClient zkClient = cloudSolrClient.getZkStateReader().getZkClient();
       ZkConfigManager zkConfigManager =
-        new ZkConfigManager(zkClient);
+          new ZkConfigManager(zkClient);
 
       zkConfigManager.uploadConfigDir(confDir.toPath(), confName);
     }
@@ -89,7 +117,7 @@ public abstract class TestSolrCloudClusterSupport {
 
 
     int liveNodes = cloudSolrClient.getZkStateReader().getClusterState().getLiveNodes().size();
-    int maxShardsPerNode = (int) Math.ceil(((double)numShards*replicationFactor)/liveNodes);
+    int maxShardsPerNode = (int) Math.ceil(((double) numShards * replicationFactor) / liveNodes);
 
     modParams.set("maxShardsPerNode", maxShardsPerNode);
     modParams.set("collection.configName", confName);
@@ -99,7 +127,8 @@ public abstract class TestSolrCloudClusterSupport {
     ensureAllReplicasAreActive(collectionName, numShards, replicationFactor, 20);
   }
 
-  protected static void ensureAllReplicasAreActive(String testCollectionName, int shards, int rf, int maxWaitSecs) throws Exception {
+  protected static void ensureAllReplicasAreActive(String testCollectionName, int shards, int rf, int maxWaitSecs)
+      throws Exception {
     long startMs = System.currentTimeMillis();
 
     ZkStateReader zkr = cloudSolrClient.getZkStateReader();
@@ -130,7 +159,7 @@ public abstract class TestSolrCloudClusterSupport {
         leader = shard.getLeader();
         assertNotNull(leader);
         log.info("Found " + replicas.size() + " replicas and leader on " +
-          leader.getNodeName() + " for " + shardId + " in " + testCollectionName);
+            leader.getNodeName() + " for " + shardId + " in " + testCollectionName);
 
         // ensure all replicas are "active"
         for (Replica replica : replicas) {
@@ -153,7 +182,7 @@ public abstract class TestSolrCloudClusterSupport {
 
     if (!allReplicasUp)
       fail("Didn't see all replicas for " + testCollectionName +
-        " come up within " + maxWaitMs + " ms! ClusterState: " + printClusterStateInfo(testCollectionName));
+          " come up within " + maxWaitMs + " ms! ClusterState: " + printClusterStateInfo(testCollectionName));
 
     long diffMs = (System.currentTimeMillis() - startMs);
     log.info("Took " + diffMs + " ms to see all replicas become active for " + testCollectionName);

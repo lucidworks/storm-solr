@@ -14,8 +14,8 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <java.version>1.8</java.version>
     <storm.version>0.9.4</storm.version>
-    <solr.version>5.3.1</solr.version>
-    <hadoop.version>2.6.0</hadoop.version>
+    <solr.version>5.5.1</solr.version>
+    <hadoop.version>2.7.1</hadoop.version>
     <hadoop.version.mapr>2.7.0-mapr-1506</hadoop.version.mapr>
     <jsonsimple.version>1.1.1</jsonsimple.version>
   </properties>
@@ -175,7 +175,7 @@
   <profiles>
 
     <profile>
-      <id>hadoop-2.6.0</id>
+      <id>hadoop-2.7.1</id>
       <activation>
         <property>
           <name>!hadoop-version</name>
@@ -183,13 +183,25 @@
       </activation>
 
       <properties>
-        <jarVersion>1.0-SNAPSHOT</jarVersion>
+        <jarVersion>2.2.2</jarVersion>
       </properties>
 
       <dependencies>
         <dependency>
           <groupId>org.apache.hadoop</groupId>
           <artifactId>hadoop-minicluster</artifactId>
+          <version>${hadoop.version}</version>
+          <scope>test</scope>
+          <exclusions>
+            <exclusion>
+              <groupId>org.slf4j</groupId>
+              <artifactId>slf4j-log4j12</artifactId>
+            </exclusion>
+          </exclusions>
+        </dependency>
+        <dependency>
+          <groupId>org.apache.hadoop</groupId>
+          <artifactId>hadoop-auth</artifactId>
           <version>${hadoop.version}</version>
           <scope>test</scope>
           <exclusions>
@@ -234,7 +246,7 @@
       </activation>
 
       <properties>
-        <jarVersion>1.0-mapr5-SNAPSHOT</jarVersion>
+        <jarVersion>2.2.-mapr5</jarVersion>
       </properties>
 
       <dependencies>
@@ -314,7 +326,7 @@
     <dependency>
       <groupId>commons-collections</groupId>
       <artifactId>commons-collections</artifactId>
-      <version>3.2.1</version>
+      <version>3.2.2</version>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>

@@ -28,6 +28,7 @@ public abstract class HdfsTestBase {
     int numNodes = getNumTestNodes();
     testCluster = new HdfsTestCluster(getClass().getSimpleName(), getNumTestNodes());
     try {
+
       testCluster.start();
     } catch (IOException e) {
       throw new RuntimeException("Failed to start Hdfs test cluster due to: "+e, e);

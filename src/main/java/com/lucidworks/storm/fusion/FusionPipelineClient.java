@@ -47,13 +47,8 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.Krb5HttpClientConfigurer;
 
 public class FusionPipelineClient {
-
-  public static final String LWWW_JAAS_FILE = "lww.jaas.file";
-  public static final String LWWW_JAAS_APPNAME = "lww.jaas.appname";
 
   public static Logger log = LoggerFactory.getLogger(FusionPipelineClient.class);
 
@@ -101,15 +96,10 @@ public class FusionPipelineClient {
 
   public FusionPipelineClient(String endpointUrl, String fusionUser, String fusionPass, String fusionRealm) throws MalformedURLException {
 
-    String lwwJaasFile = System.getProperty(LWWW_JAAS_FILE);
-    if (lwwJaasFile != null && !lwwJaasFile.isEmpty()) {
-      System.setProperty("sun.security.krb5.debug", "true");
-      System.setProperty("java.security.auth.login.config", lwwJaasFile);
-      System.setProperty("solr.kerberos.jaas.appname", System.getProperty(LWWW_JAAS_APPNAME, "Client"));
-      HttpClientUtil.setConfigurer(new Krb5HttpClientConfigurer());
-      httpClient = HttpClientUtil.createClient(null);
-      HttpClientUtil.setMaxConnections(httpClient, 500);
-      HttpClientUtil.setMaxConnectionsPerHost(httpClient, 100);
+
+    String fusionLoginConf = System.getProperty(FusionKrb5HttpClientConfigurer.LOGIN_CONFIG_PROP);
+    if (fusionLoginConf != null && !fusionLoginConf.isEmpty()) {
+      httpClient = FusionKrb5HttpClientConfigurer.createClient(fusionUser);
       isKerberos = true;
     } else {
       globalConfig = RequestConfig.custom().setCookieSpec(CookieSpecs.BEST_MATCH).build();
@@ -392,9 +382,8 @@ public class FusionPipelineClient {
     }
   }
 
-  protected Exception postJsonToPipelineWithRetry(String endpoint, List docs, ArrayList<String> mutable, Exception lastExc, int requestId)
-    throws Exception
-  {
+  protected synchronized Exception postJsonToPipelineWithRetry(
+      String endpoint, List docs, ArrayList<String> mutable, Exception lastExc, int requestId) throws Exception {
     Exception retryAfterException = null;
 
     try {
@@ -475,6 +464,7 @@ public class FusionPipelineClient {
       HttpResponse response = null;
       HttpClientContext context = null;
       if (isKerberos) {
+        httpClient = FusionKrb5HttpClientConfigurer.createClient(fusionUser);
         response = httpClient.execute(postRequest);
       } else {
         context = HttpClientContext.create();
@@ -509,6 +499,7 @@ public class FusionPipelineClient {
 
         log.info("Going to re-try request "+requestId+" after session re-established with "+endpoint);
         if (isKerberos) {
+          httpClient = FusionKrb5HttpClientConfigurer.createClient(fusionUser);
           response = httpClient.execute(postRequest);
         } else {
           response = httpClient.execute(postRequest, context);
