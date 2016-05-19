@@ -6,6 +6,8 @@
 :linkattrs:
 :source-highlighter: pygments
 :pygments-style: tango
+:jarfilename: storm-solr-<version>.jar
+:jarfilename-mapr: storm-solr-<version>-mapr5.jar
 
 Tools for building Storm topologies for indexing data into SolrCloud.
 
@@ -23,7 +25,7 @@ First, build the Jar for this project:
 
 `mvn clean package`
 
-This will generate the `target/storm-solr-1.0.jar` that contains the Storm JAR needed to deploy a topology.
+This will generate the `target/{jarfilename}` that contains the Storm JAR needed to deploy a topology.
 
 // end::storm-build[]
 // tag::mapr[]
@@ -35,7 +37,7 @@ First, build the jar with MapR 5 dependencies.
 [source]
 mvn clean package -Dmaven.test.skip=true -Dhadoop-version=mapr5
 
-This will generate the `target/storm-solr-1.0-mapr5-SNAPSHOT.jar` that contains the Storm JAR needed to deploy a topology.
+This will generate the `target/{jarfilename-mapr}` that contains the Storm JAR needed to deploy a topology.
 
 In order to execute the `hdfs-to-solr` example, add the spring `fs.hdfs.impl` property to your `resources/Config.groovy` file with the `com.mapr.fs.MapRFileSystem` value. Also, change the `fs.defaultFS` property to use the maprfs schema.
 
@@ -53,7 +55,7 @@ In order to execute the `hdfs-to-solr` example, add the spring `fs.hdfs.impl` pr
 
 To begin, let’s understand how to run a topology in Storm. Effectively, there are two basic modes of running a Storm topology: local and cluster mode. Local mode is great for testing your topology locally before pushing it out to a remote Storm cluster, such as staging or production. For starters, you need to compile and package your code and all of its dependencies into a single JAR with an main class that runs your topology.
 
-For this project, the Maven Shade plugin is used to create a unified JAR with dependencies. The benefit of the Shade plugin is that it can relocate classes into different packages at the byte-code level to avoid dependency conflicts. This comes in quite handy if your application depends on 3rd party libraries that conflict with classes on the Storm classpath. You can look at the project pom.xml file for specific details about I use the Shade plugin. For now, let it suffice to say that the project makes it very easy to build a Storm JAR for your application. Once you have a unified JAR (storm-solr-1.0.jar), you’re ready to run your topology in Storm.
+For this project, the Maven Shade plugin is used to create a unified JAR with dependencies. The benefit of the Shade plugin is that it can relocate classes into different packages at the byte-code level to avoid dependency conflicts. This comes in quite handy if your application depends on 3rd party libraries that conflict with classes on the Storm classpath. You can look at the project pom.xml file for specific details about I use the Shade plugin. For now, let it suffice to say that the project makes it very easy to build a Storm JAR for your application. Once you have a unified JAR ({jarfilename}), you’re ready to run your topology in Storm.
 
 To run locally, you need to have some code that starts up a local cluster in the JVM, submits your topology, and then waits for some configurable amount of time before shutting it all back down, as shown in the following code:
 
@@ -134,7 +136,7 @@ We’ll get into the specific details of the implementation shortly, but first, 
 
 [source]
 ....
-java -classpath $STORM_HOME/lib/*:target/storm-solr-1.0.jar com.lucidworks.storm.StreamingApp \
+java -classpath $STORM_HOME/lib/*:target/{jarfilename} com.lucidworks.storm.StreamingApp \
    example.twitter.TwitterToSolrTopology -localRunSecs 90
 ....
 
@@ -144,7 +146,7 @@ To submit to a remote cluster, you would do:
 
 [source]
 ....
-$STORM_HOME/bin/storm jar target/storm-solr-1.0.jar com.lucidworks.storm.StreamingApp \
+$STORM_HOME/bin/storm jar target/{jarfilename} com.lucidworks.storm.StreamingApp \
    example.twitter.TwitterToSolrTopology -env staging
 ....
 
@@ -305,7 +307,7 @@ However, you can also specify a different `Config.groovy` file by using the `-co
 
 [source]
 ....
-$STORM_HOME/bin/storm jar target/storm-solr-1.0.jar com.lucidworks.storm.StreamingApp \
+$STORM_HOME/bin/storm jar target/${jarfilename} com.lucidworks.storm.StreamingApp \
    example.twitter.TwitterToSolrTopology -env staging -config MyConfig.groovy
 ....
 
