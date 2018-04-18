@@ -11,6 +11,8 @@
 
 Tools for building Storm topologies for indexing data into SolrCloud.
 
+WARNING: The code in this repository does not currently work with Storm v1.0 and higher.
+
 == Features
 
 * Send objects from a Storm topology into Solr.
