@@ -13,7 +13,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <java.version>1.8</java.version>
-    <storm.version>0.9.4</storm.version>
+    <storm.version>2.0.0</storm.version>
     <solr.version>5.5.1</solr.version>
     <hadoop.version>2.7.1</hadoop.version>
     <hadoop.version.mapr>2.7.0-mapr-1506</hadoop.version.mapr>
