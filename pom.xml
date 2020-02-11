@@ -24,13 +24,13 @@
     <repository>
       <id>springsource-repo</id>
       <name>SpringSource Repository</name>
-      <url>http://repo.springsource.org/release</url>
+      <url>https://repo.springsource.org/release</url>
     </repository>
 
     <repository>
       <id>repository.mapr.com</id>
       <name>MAPR PUBLIC</name>
-      <url>http://repository.mapr.com/nexus/content/groups/mapr-public</url>
+      <url>https://repository.mapr.com/nexus/content/groups/mapr-public</url>
     </repository>
   </repositories>
 
